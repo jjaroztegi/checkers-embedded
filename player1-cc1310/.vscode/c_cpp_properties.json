@@ -1,0 +1,44 @@
+{
+  "env": {
+    "CCS_INSTALL_ROOT": "/Applications/TI/ccs1031/ccs",
+    "SIMPLELINK_CC13X0_SDK": "/Users/invi/Developer/Uni/checkers/simplelink_cc13x0_sdk_4_10_01_01"
+  },
+  "configurations": [
+    {
+      "name": "Mac",
+      "includePath": [
+        "${workspaceFolder}",
+        "${env:SIMPLELINK_CC13X0_SDK}/source",
+        "${env:SIMPLELINK_CC13X0_SDK}/kernel/nortos",
+        "${env:SIMPLELINK_CC13X0_SDK}/kernel/nortos/posix",
+        "${env:CCS_INSTALL_ROOT}/tools/compiler/ti-cgt-arm_20.2.4.LTS/include"
+      ],
+      "defines": [
+        "__TI_COMPILER_VERSION__=20002004",
+        "DeviceFamily_CC13X0",
+        "CCFG_FORCE_VDDR_HH=0",
+        "SUPPORT_PHY_CUSTOM",
+        "SUPPORT_PHY_50KBPS2GFSK",
+        "SUPPORT_PHY_625BPSLRM",
+        "SUPPORT_PHY_5KBPSSLLR",
+        "__ARM_ARCH=7",
+        "__ARM_ARCH_7M__=1"
+      ],
+      "compilerPath": "",
+      "cStandard": "c99",
+      "cppStandard": "c++11",
+      "intelliSenseMode": "macos-clang-arm",
+      "browse": {
+        "path": [
+          "${workspaceFolder}",
+          "${env:SIMPLELINK_CC13X0_SDK}/source",
+          "${env:SIMPLELINK_CC13X0_SDK}/kernel/nortos",
+          "${env:SIMPLELINK_CC13X0_SDK}/kernel/nortos/posix",
+          "${env:CCS_INSTALL_ROOT}/tools/compiler/ti-cgt-arm_20.2.4.LTS/include"
+        ],
+        "limitSymbolsToIncludedHeaders": true
+      }
+    }
+  ],
+  "version": 4
+}

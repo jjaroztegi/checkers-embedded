@@ -1,0 +1,41 @@
+# Code Composer Studio
+#
+# Build artifacts
+Debug/
+Release/
+Flash/
+RAM/
+makefile
+*.clangd
+*.map
+*.mk
+*.opt
+*.pp
+*.xml
+
+# Generated directories
+.config/
+.launches/
+targetConfigs/
+.settings/
+
+# Generated files
+.xdchelp
+
+# Temporary files
+tmp/
+*.tmp
+*.bak
+
+# Uniflash session files
+*.uniflashsession
+
+# Other
+dvt/
+.jxbrowser-data/
+.jxbrowser.userdata/
+.metadata/
+RemoteSystemsTempFiles/
+/.metadata/
+*.zip
+msp430*/

@@ -1,0 +1,51 @@
+{
+  "env": {
+    "CCS_INSTALL_ROOT": "/Applications/TI/ccs1031/ccs"
+  },
+  "configurations": [
+    {
+      "name": "Mac",
+      "includePath": [
+        "${workspaceFolder}",
+        "${workspaceFolder}/_ti_driverlib",
+        "${workspaceFolder}/_ti_driverlib/inc",
+        "${workspaceFolder}/_ti_grlib",
+        "${workspaceFolder}/_ti_grlib/fonts",
+        "${workspaceFolder}/drivers",
+        "${workspaceFolder}/hal",
+        "${env:CCS_INSTALL_ROOT}/ccs_base/msp430/include",
+        "${env:CCS_INSTALL_ROOT}/tools/compiler/ti-cgt-msp430_20.2.4.LTS/include"
+      ],
+      "defines": [
+        "__TI_COMPILER_VERSION__=20002004",
+        "__MSP430FR5994__",
+        "_MPU_ENABLE",
+        "__MSP430__",
+        "__MSP430FR5994__",
+        "MSP430FRXX",
+        "__MSP430_HAS_MSP430XV2_CPU__",
+        "__MSP430_HAS_FRAM__",
+        "EUSCI_A3_VECTOR=41"
+      ],
+      "compilerPath": "",
+      "cStandard": "c99",
+      "cppStandard": "c++11",
+      "intelliSenseMode": "macos-clang-x64",
+      "browse": {
+        "path": [
+          "${workspaceFolder}",
+          "${workspaceFolder}/_ti_driverlib",
+          "${workspaceFolder}/_ti_driverlib/inc",
+          "${workspaceFolder}/_ti_grlib",
+          "${workspaceFolder}/_ti_grlib/fonts",
+          "${workspaceFolder}/drivers",
+          "${workspaceFolder}/hal",
+          "${env:CCS_INSTALL_ROOT}/ccs_base/msp430/include",
+          "${env:CCS_INSTALL_ROOT}/tools/compiler/ti-cgt-msp430_20.2.4.LTS/include"
+        ],
+        "limitSymbolsToIncludedHeaders": true
+      }
+    }
+  ],
+  "version": 4
+}

@@ -1,0 +1,49 @@
+# Code Composer Studio v10.x
+# Texas Instruments embedded projects (CC1310, MSP430)
+#
+# Build artifacts
+Debug/
+Release/
+Flash/
+RAM/
+makefile
+*.clangd
+*.map
+*.mk
+*.opt
+*.pp
+*.xml
+
+# Generated directories
+.config/
+.launches/
+targetConfigs/
+.settings/
+
+# Generated files
+.xdchelp
+*.d
+*.obj
+*.out
+*_linkInfo.xml
+
+# Temporary files
+tmp/
+*.tmp
+*.bak
+
+# Uniflash session files
+*.uniflashsession
+
+# Other CCS-generated
+dvt/
+.jxbrowser-data/
+.jxbrowser.userdata/
+.metadata/
+RemoteSystemsTempFiles/
+/.metadata/
+*.zip
+
+# macOS
+.DS_Store
+*.swp
