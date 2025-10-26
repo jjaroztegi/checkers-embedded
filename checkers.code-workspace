@@ -32,7 +32,8 @@
 			"pincc26xx.h": "c",
 			"cli.h": "c",
 			"stdint.h": "c",
-			"stdlib.h": "c"
+			"stdlib.h": "c",
+			"protocol.h": "c"
 		}
 	}
 }

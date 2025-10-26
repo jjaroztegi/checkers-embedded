@@ -2,8 +2,6 @@
 #include <driverlib.h>
 #include <msp430.h>
 #include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 // HAL headers
@@ -11,15 +9,16 @@
 #include <hal/hal_uart.h>
 
 // Driver headers
-#include <drivers/cli.h>
 #include <drivers/crystalfontz.h>
+
+// Game Headers
+#include <comm/protocol.h>
+#include <game/checkers.h>
 
 // Local function definitions
 void Clocks_init();
 void GUI_print_fixed_text();
 void GUI_print_status(char* status, int line);
-void send_number(uint16_t number);
-bool receive_number(uint16_t* number, uint32_t timeout_cycles);
 
 // Global variables
 Graphics_Context g_sContext;
@@ -60,49 +59,28 @@ void main(void) {
   GUI_print_status("READY!", 40);
   __delay_cycles(16000000);  // 1 more second
 
-  while (1) {
-    char display_str[32];
+  // Initialize checkers board
+  init_checkers_board();
+  Graphics_clearDisplay(&g_sContext);
+  draw_checkers_board(&g_sContext);
 
-    if (my_turn) {
-      // MY TURN: Send the counter
+  __delay_cycles(16000000 * 2);  // 2 second delay
+  // Example: Move from A3 to B4
+  apply_move_from_string("A3B4");
+  draw_checkers_board(&g_sContext);
 
-      // Clear any stale RX data
-      while (CLI_data_available()) {
-        CLI_rx_byte();
-      }
-
-      sprintf(display_str, "TX: %u", counter);
-      GUI_print_status(display_str, 40);
-
-      send_number(counter);
-
-      // Now switch to listening mode
-      my_turn = false;
-      GUI_print_status("LISTENING...", 50);
-
-    } else {
-      // LISTENING MODE: Wait for response
-      uint16_t received_number = 0;
-      bool success = receive_number(&received_number, 48000000);
-
-      if (success) {
-        sprintf(display_str, "RX: %u", received_number);
-        GUI_print_status(display_str, 50);
-
-        counter++;
-
-        // Wait a bit, then it's my turn again
-        __delay_cycles(16000000);  // 1 second delay
-        my_turn = true;
-
-      } else {
-        GUI_print_status("RX: TIMEOUT", 50);
-
-        // Reset and try again
-        __delay_cycles(16000000);
-        my_turn = true;
-      }
+  // Example: receive and apply a move
+  char received_move[8];
+  if (receive_string(received_move, sizeof(received_move), 48000000)) {
+    if (apply_move_from_string(received_move)) {
+      draw_checkers_board(&g_sContext);  // Redraw after move
     }
+  }
+
+  // Main loop (can be expanded for interactive play)
+  while (1) {
+    // interactive move logic here
+    __delay_cycles(16000000);  // 1 second delay
   }
 }
 
@@ -139,73 +117,4 @@ void GUI_print_status(char* status, int line) {
   Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_RED);
   Graphics_drawStringCentered(&g_sContext, (int8_t*)status, strlen(status), 64,
                               line, OPAQUE_TEXT);
-}
-
-void send_number(uint16_t number) {
-  char buffer[16];
-  sprintf(buffer, "%u\r\n", number);
-
-  int i = 0;
-  while (buffer[i] != '\0') {
-    CLI_tx_byte(buffer[i]);
-    i++;
-  }
-}
-
-bool receive_number(uint16_t* number, uint32_t timeout_cycles) {
-  char buffer[16];
-  int i = 0;
-  char c;
-  volatile uint32_t total_timeout = 0;
-
-  memset(buffer, 0, sizeof(buffer));
-
-  // Wait for first byte
-  while (!CLI_data_available() && total_timeout < timeout_cycles) {
-    total_timeout++;
-    if ((total_timeout % 16) == 0) {
-      __delay_cycles(1);
-    }
-  }
-
-  if (total_timeout >= timeout_cycles) {
-    return false;
-  }
-
-  // Read bytes until newline
-  volatile int char_timeout = 0;
-  while (i < sizeof(buffer) - 1) {
-    if (CLI_data_available()) {
-      c = CLI_rx_byte();
-
-      if (c == '\n' || c == '\r') {
-        // Consume extra newline if present
-        __delay_cycles(800);
-        if (CLI_data_available()) {
-          CLI_rx_byte();
-        }
-        break;
-      }
-
-      if (c >= '0' && c <= '9') {
-        buffer[i++] = c;
-      }
-
-      char_timeout = 0;
-    } else {
-      char_timeout++;
-      if (char_timeout > 10000) {
-        break;
-      }
-    }
-  }
-
-  buffer[i] = '\0';
-
-  if (i > 0) {
-    *number = (uint16_t)atoi(buffer);
-    return true;
-  }
-
-  return false;
 }
