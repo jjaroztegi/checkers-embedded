@@ -20,8 +20,9 @@
 #include <game/checkers.h>
 
 // Constants
-#define TARGET_FPS 20
-#define FRAME_DELAY_CYCLES (16000000 / TARGET_FPS)
+#define POLLING_RATE 60
+#define RENDER_INTERVAL 3                            // 60/3 = 20fps
+#define POLL_DELAY_CYCLES (16000000 / POLLING_RATE)  // 60Hz
 #define JOYSTICK_THRESHOLD 85
 
 // Local function definitions
@@ -69,16 +70,25 @@ void main(void) {
   CHECKERS_draw_board(&g_graphicsContext, &game);
 
   // Main loop
+  int frame_counter = 0;
   while (1) {
-    __delay_cycles(FRAME_DELAY_CYCLES);
+    __delay_cycles(POLL_DELAY_CYCLES);
     HAL_ADC_trigger_continuous_conversion();
     handle_input(&game);
-    CHECKERS_draw_board(&g_graphicsContext, &game);
+
+    frame_counter++;
+    if (frame_counter >= RENDER_INTERVAL) {
+      CHECKERS_draw_board(&g_graphicsContext, &game);
+      frame_counter = 0;
+    }
   }
 }
 
 void handle_input(GameState* game) {
   // Joystick movement
+  static int prev_dir_x = 0;
+  static int prev_dir_y = 0;
+
   float joystick_x = JOYSTICK_get_x();
   float joystick_y = JOYSTICK_get_y();
   int dir_x = 0;
@@ -93,22 +103,36 @@ void handle_input(GameState* game) {
   else if (joystick_x < -JOYSTICK_THRESHOLD)
     dir_x = -1;
 
-  if (dir_x != 0 || dir_y != 0) {
+  // Move only on a new direction
+  if ((dir_x != 0 || dir_y != 0) &&
+      (dir_x != prev_dir_x || dir_y != prev_dir_y)) {
     CHECKERS_move_cursor(dir_x, dir_y, game);
   }
 
+  prev_dir_x = dir_x;
+  prev_dir_y = dir_y;
+
   // Button presses
+  static bool prev_s1_state = false;
+  static bool prev_s2_state = false;
+
+  bool s1_state = SWITCH_get_edumkii_S1();
+  bool s2_state = SWITCH_get_edumkii_S2();
+
   if (game->selection_state == IDLE) {
-    if (SWITCH_get_edumkii_S1()) {
+    if (s1_state && !prev_s1_state) {  // S1 pressed
       CHECKERS_select_piece(game);
     }
-  } else {
-    if (SWITCH_get_edumkii_S2()) {
+  } else {                             // PIECE_SELECTED
+    if (s2_state && !prev_s2_state) {  // S2 pressed
       CHECKERS_confirm_move(game);
       Move move = CHECKERS_get_move(game);
       CHECKERS_apply_move(game, &move);
     }
   }
+
+  prev_s1_state = s1_state;
+  prev_s2_state = s2_state;
 }
 
 void Clocks_init() {
