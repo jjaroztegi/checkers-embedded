@@ -44,10 +44,11 @@ typedef struct {
 void CHECKERS_init(GameState* state);
 void CHECKERS_draw_board(Graphics_Context* pContext, const GameState* state);
 void CHECKERS_encode_move(const Move* move, char* move_buffer);
+bool CHECKERS_apply_move(GameState* state, const Move* move);
 bool CHECKERS_apply_move_from_string(const char* move_str, GameState* state);
-void CHECKERS_set_hovered(int dir_x, int dir_y, GameState* state);
+void CHECKERS_move_cursor(int dir_x, int dir_y, GameState* state);
 void CHECKERS_select_piece(GameState* state);
-void CHECKERS_select_destination(GameState* state);
+void CHECKERS_confirm_move(GameState* state);
 Move CHECKERS_get_move(const GameState* state);
 
 #endif /* GAME_CHECKERS_H_ */

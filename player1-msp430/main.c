@@ -19,6 +19,11 @@
 #include <comm/protocol.h>
 #include <game/checkers.h>
 
+// Constants
+#define TARGET_FPS 20
+#define FRAME_DELAY_CYCLES (16000000 / TARGET_FPS)
+#define JOYSTICK_THRESHOLD 85
+
 // Local function definitions
 void Clocks_init();
 void GUI_print_fixed_text();
@@ -26,7 +31,7 @@ void GUI_print_status(char* status, int line);
 void handle_input(GameState* game);
 
 // Global variables
-Graphics_Context g_sContext;
+Graphics_Context g_graphicsContext;
 
 void main(void) {
   // Stop WDT
@@ -60,15 +65,15 @@ void main(void) {
   CHECKERS_init(&game);
 
   // Initial draw
-  Graphics_clearDisplay(&g_sContext);
-  CHECKERS_draw_board(&g_sContext, &game);
+  Graphics_clearDisplay(&g_graphicsContext);
+  CHECKERS_draw_board(&g_graphicsContext, &game);
 
   // Main loop
   while (1) {
-    __delay_cycles(1066666);  // 1,066,666 / 16,000,000 ≈ 67ms
+    __delay_cycles(FRAME_DELAY_CYCLES);
     HAL_ADC_trigger_continuous_conversion();
     handle_input(&game);
-    CHECKERS_draw_board(&g_sContext, &game);
+    CHECKERS_draw_board(&g_graphicsContext, &game);
   }
 }
 
@@ -79,17 +84,17 @@ void handle_input(GameState* game) {
   int dir_x = 0;
   int dir_y = 0;
 
-  if (joystick_y > 90)
+  if (joystick_y > JOYSTICK_THRESHOLD)
     dir_y = -1;
-  else if (joystick_y < -90)
+  else if (joystick_y < -JOYSTICK_THRESHOLD)
     dir_y = 1;
-  else if (joystick_x > 90)
+  else if (joystick_x > JOYSTICK_THRESHOLD)
     dir_x = 1;
-  else if (joystick_x < -90)
+  else if (joystick_x < -JOYSTICK_THRESHOLD)
     dir_x = -1;
 
   if (dir_x != 0 || dir_y != 0) {
-    CHECKERS_set_hovered(dir_x, dir_y, game);
+    CHECKERS_move_cursor(dir_x, dir_y, game);
   }
 
   // Button presses
@@ -99,11 +104,9 @@ void handle_input(GameState* game) {
     }
   } else {
     if (SWITCH_get_edumkii_S2()) {
-      CHECKERS_select_destination(game);
+      CHECKERS_confirm_move(game);
       Move move = CHECKERS_get_move(game);
-      char move_buffer[8];
-      CHECKERS_encode_move(&move, move_buffer);
-      CHECKERS_apply_move_from_string(move_buffer, game);
+      CHECKERS_apply_move(game, &move);
     }
   }
 }
@@ -118,22 +121,22 @@ void Clocks_init() {
 
 void GUI_print_fixed_text() {
   CRYSTALFONTZ_set_orientation(LCD_ORIENTATION_UP);
-  Graphics_initContext(&g_sContext, &g_sCRYSTALFONTZ);
-  Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_BLUE);
-  Graphics_setBackgroundColor(&g_sContext, GRAPHICS_COLOR_WHITE);
-  GrContextFontSet(&g_sContext, &g_sFontFixed6x8);
-  Graphics_clearDisplay(&g_sContext);
-  Graphics_drawStringCentered(&g_sContext, (int8_t*)"Checkers",
+  Graphics_initContext(&g_graphicsContext, &g_sCRYSTALFONTZ);
+  Graphics_setForegroundColor(&g_graphicsContext, GRAPHICS_COLOR_BLUE);
+  Graphics_setBackgroundColor(&g_graphicsContext, GRAPHICS_COLOR_WHITE);
+  GrContextFontSet(&g_graphicsContext, &g_sFontFixed6x8);
+  Graphics_clearDisplay(&g_graphicsContext);
+  Graphics_drawStringCentered(&g_graphicsContext, (int8_t*)"Checkers",
                               AUTO_STRING_LENGTH, 64, 10, OPAQUE_TEXT);
-  Graphics_drawStringCentered(&g_sContext, (int8_t*)"Player 1",
+  Graphics_drawStringCentered(&g_graphicsContext, (int8_t*)"Player 1",
                               AUTO_STRING_LENGTH, 64, 20, OPAQUE_TEXT);
 }
 
 void GUI_print_status(char* status, int line) {
-  Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_WHITE);
-  Graphics_fillRectangle(&g_sContext,
+  Graphics_setForegroundColor(&g_graphicsContext, GRAPHICS_COLOR_WHITE);
+  Graphics_fillRectangle(&g_graphicsContext,
                          &(Graphics_Rectangle){0, line - 4, 127, line + 8});
-  Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_RED);
-  Graphics_drawStringCentered(&g_sContext, (int8_t*)status, strlen(status), 64,
-                              line, OPAQUE_TEXT);
+  Graphics_setForegroundColor(&g_graphicsContext, GRAPHICS_COLOR_RED);
+  Graphics_drawStringCentered(&g_graphicsContext, (int8_t*)status,
+                              strlen(status), 64, line, OPAQUE_TEXT);
 }
