@@ -5,11 +5,15 @@
 #include <string.h>
 
 // HAL headers
+#include <hal/hal_adc.h>
+#include <hal/hal_digital_input.h>
 #include <hal/hal_lcd.h>
 #include <hal/hal_uart.h>
 
 // Driver headers
 #include <drivers/crystalfontz.h>
+#include <drivers/joystick.h>
+#include <drivers/switch.h>
 
 // Game Headers
 #include <comm/protocol.h>
@@ -19,68 +23,88 @@
 void Clocks_init();
 void GUI_print_fixed_text();
 void GUI_print_status(char* status, int line);
+void handle_input(GameState* game);
 
 // Global variables
 Graphics_Context g_sContext;
-uint16_t counter = 0;
-bool my_turn = true;  // MSP starts by sending
 
 void main(void) {
   // Stop WDT
   WDT_A_hold(WDT_A_BASE);
 
-  // Initialize clocks
+  // Initializations
   Clocks_init();
-
-  // Initialize HAL GPIOs
   HAL_LCD_init_gpio();
   HAL_UART_init_gpio();
+  HAL_ADC_init_gpio();
 
-  // Disable the GPIO power-on default high-impedance mode
   PMM_unlockLPM5();
 
-  // Configure HAL modules
   HAL_LCD_config();
   HAL_UART_config();
+  HAL_ADC_config();
+  HAL_DIGIN_init_gpio();
 
   // Enable global interrupts
   __bis_SR_register(GIE);
 
-  // Initialize and configure external devices
+  // External devices
   CRYSTALFONTZ_init();
+  HAL_DIGIN_config();
 
-  // Print fixed text on GLCD
   GUI_print_fixed_text();
-
-  // 5 second startup delay - both devices sync
-  GUI_print_status("WAITING 5s...", 40);
-  __delay_cycles(80000000);  // 5 seconds @ 16MHz
-
   GUI_print_status("READY!", 40);
-  __delay_cycles(16000000);  // 1 more second
 
-  // Initialize checkers board
-  init_checkers_board();
+  // Game state initialization
+  GameState game;
+  CHECKERS_init(&game);
+
+  // Initial draw
   Graphics_clearDisplay(&g_sContext);
-  draw_checkers_board(&g_sContext);
+  CHECKERS_draw_board(&g_sContext, &game);
 
-  __delay_cycles(16000000 * 2);  // 2 second delay
-  // Example: Move from A3 to B4
-  apply_move_from_string("A3B4");
-  draw_checkers_board(&g_sContext);
+  // Main loop
+  while (1) {
+    __delay_cycles(1066666);  // 1,066,666 / 16,000,000 ≈ 67ms
+    HAL_ADC_trigger_continuous_conversion();
+    handle_input(&game);
+    CHECKERS_draw_board(&g_sContext, &game);
+  }
+}
 
-  // Example: receive and apply a move
-  char received_move[8];
-  if (receive_string(received_move, sizeof(received_move), 48000000)) {
-    if (apply_move_from_string(received_move)) {
-      draw_checkers_board(&g_sContext);  // Redraw after move
-    }
+void handle_input(GameState* game) {
+  // Joystick movement
+  float joystick_x = JOYSTICK_get_x();
+  float joystick_y = JOYSTICK_get_y();
+  int dir_x = 0;
+  int dir_y = 0;
+
+  if (joystick_y > 90)
+    dir_y = -1;
+  else if (joystick_y < -90)
+    dir_y = 1;
+  else if (joystick_x > 90)
+    dir_x = 1;
+  else if (joystick_x < -90)
+    dir_x = -1;
+
+  if (dir_x != 0 || dir_y != 0) {
+    CHECKERS_set_hovered(dir_x, dir_y, game);
   }
 
-  // Main loop (can be expanded for interactive play)
-  while (1) {
-    // interactive move logic here
-    __delay_cycles(16000000);  // 1 second delay
+  // Button presses
+  if (game->selection_state == IDLE) {
+    if (SWITCH_get_edumkii_S1()) {
+      CHECKERS_select_piece(game);
+    }
+  } else {
+    if (SWITCH_get_edumkii_S2()) {
+      CHECKERS_select_destination(game);
+      Move move = CHECKERS_get_move(game);
+      char move_buffer[8];
+      CHECKERS_encode_move(&move, move_buffer);
+      CHECKERS_apply_move_from_string(move_buffer, game);
+    }
   }
 }
 
@@ -99,21 +123,16 @@ void GUI_print_fixed_text() {
   Graphics_setBackgroundColor(&g_sContext, GRAPHICS_COLOR_WHITE);
   GrContextFontSet(&g_sContext, &g_sFontFixed6x8);
   Graphics_clearDisplay(&g_sContext);
-  Graphics_drawStringCentered(&g_sContext, (int8_t*)"RF PING-PONG",
+  Graphics_drawStringCentered(&g_sContext, (int8_t*)"Checkers",
                               AUTO_STRING_LENGTH, 64, 10, OPAQUE_TEXT);
-  Graphics_drawStringCentered(&g_sContext, (int8_t*)"MSP430FR5994",
+  Graphics_drawStringCentered(&g_sContext, (int8_t*)"Player 1",
                               AUTO_STRING_LENGTH, 64, 20, OPAQUE_TEXT);
-  Graphics_drawStringCentered(&g_sContext, (int8_t*)"PLAYER 1",
-                              AUTO_STRING_LENGTH, 64, 30, OPAQUE_TEXT);
 }
 
 void GUI_print_status(char* status, int line) {
-  // Clear the line first
   Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_WHITE);
   Graphics_fillRectangle(&g_sContext,
                          &(Graphics_Rectangle){0, line - 4, 127, line + 8});
-
-  // Print new status
   Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_RED);
   Graphics_drawStringCentered(&g_sContext, (int8_t*)status, strlen(status), 64,
                               line, OPAQUE_TEXT);
