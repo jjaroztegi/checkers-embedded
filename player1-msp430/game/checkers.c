@@ -165,7 +165,7 @@ bool CHECKERS_apply_move(GameState* state, const Move* move) {
 bool CHECKERS_apply_move_from_string(const char* move_str, GameState* state) {
   Move move;
   if (decode_move(move_str, &move)) {
-    return apply_move(state, &move);
+    return CHECKERS_apply_move(state, &move);
   }
   return false;
 }
