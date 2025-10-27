@@ -129,7 +129,7 @@ static bool decode_move(const char* move_str, Move* move) {
   return true;
 }
 
-static bool apply_move(GameState* state, const Move* move) {
+bool CHECKERS_apply_move(GameState* state, const Move* move) {
   //- TODO: Add check for valid move (e.g. player's turn, piece type, direction)
   int captured_row, captured_col;
 
@@ -170,11 +170,19 @@ bool CHECKERS_apply_move_from_string(const char* move_str, GameState* state) {
   return false;
 }
 
-void CHECKERS_set_hovered(int dir_x, int dir_y, GameState* state) {
+void CHECKERS_move_cursor(int dir_x, int dir_y, GameState* state) {
   state->hovered_row += dir_y;
   state->hovered_col += dir_x;
 
-  //- TODO: Add boundary checks to wrap around the board
+  // Wrap around the board
+  if (state->hovered_row < 0)
+    state->hovered_row = BOARD_SIZE - 1;
+  else if (state->hovered_row >= BOARD_SIZE)
+    state->hovered_row = 0;
+  if (state->hovered_col < 0)
+    state->hovered_col = BOARD_SIZE - 1;
+  else if (state->hovered_col >= BOARD_SIZE)
+    state->hovered_col = 0;
 }
 
 void CHECKERS_select_piece(GameState* state) {
@@ -186,9 +194,7 @@ void CHECKERS_select_piece(GameState* state) {
   state->last_move_valid = false;
 }
 
-void CHECKERS_select_destination(GameState* state) {
-  state->selection_state = IDLE;
-}
+void CHECKERS_confirm_move(GameState* state) { state->selection_state = IDLE; }
 
 Move CHECKERS_get_move(const GameState* state) {
   Move move;
