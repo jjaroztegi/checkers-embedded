@@ -103,7 +103,7 @@ void main(void) {
       }
     } else {
       // LISTENING MODE: Wait for opponent's move
-      char receive_buffer[40];
+      char receive_buffer[8];
       bool ok =
           receive_string(receive_buffer, sizeof(receive_buffer), 48000000);
 

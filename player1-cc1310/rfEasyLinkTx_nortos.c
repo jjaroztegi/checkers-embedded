@@ -30,9 +30,9 @@ static PIN_State pinState;
 static UART_Handle uartHandle;
 
 /* LED configuration */
-PIN_Config pinTable[] = {Board_PIN_LED1 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW |
+PIN_Config pinTable[] = {Board_PIN_GLED | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW |
                              PIN_PUSHPULL | PIN_DRVSTR_MAX,
-                         Board_PIN_LED2 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW |
+                         Board_PIN_RLED | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW |
                              PIN_PUSHPULL | PIN_DRVSTR_MAX,
                          PIN_TERMINATE};
 
@@ -46,8 +46,8 @@ void* mainThread(void* arg0) {
   }
 
   /* Clear LED pins */
-  PIN_setOutputValue(pinHandle, Board_PIN_LED1, 0);
-  PIN_setOutputValue(pinHandle, Board_PIN_LED2, 0);
+  PIN_setOutputValue(pinHandle, Board_PIN_GLED, 0);
+  PIN_setOutputValue(pinHandle, Board_PIN_RLED, 0);
 
   // Initialize UART driver
   UART_init();
@@ -78,20 +78,20 @@ void* mainThread(void* arg0) {
   EasyLink_setRfPower(14);
 
   // 2 second startup delay - sync with MSP430
-  PIN_setOutputValue(pinHandle, Board_PIN_LED1, 1);
+  PIN_setOutputValue(pinHandle, Board_PIN_GLED, 1);
   sleep(2);
-  PIN_setOutputValue(pinHandle, Board_PIN_LED1, 0);
+  PIN_setOutputValue(pinHandle, Board_PIN_GLED, 0);
   sleep(1);
 
-  char rxBuffer[40];
-  char txBuffer[40];
+  char rxBuffer[8];
+  char txBuffer[8];
 
   while (1) {
     // LISTENING MODE: Wait for incoming move string from MSP430
     memset(rxBuffer, 0, sizeof(rxBuffer));
     int bytesRead = UART_read(uartHandle, rxBuffer, sizeof(rxBuffer) - 1);
     if (bytesRead > 0) {
-      PIN_setOutputValue(pinHandle, Board_PIN_LED1, 1);  // LED1 ON - receiving
+      PIN_setOutputValue(pinHandle, Board_PIN_GLED, 1);  // LED1 ON - receiving
 
       // Create and send RF packet with the move string
       EasyLink_TxPacket txPacket = {{0}, 0, 0, {0}};
@@ -111,8 +111,8 @@ void* mainThread(void* arg0) {
           char* rf_payload = (char*)&rxPacket.payload[2];
           strncpy(txBuffer, rf_payload, sizeof(txBuffer) - 1);
           txBuffer[sizeof(txBuffer) - 1] = '\0';
-          PIN_setOutputValue(pinHandle, Board_PIN_LED2,
-                             !PIN_getOutputValue(Board_PIN_LED2));
+          PIN_setOutputValue(pinHandle, Board_PIN_RLED,
+                             !PIN_getOutputValue(Board_PIN_RLED));
 
           // 200 milliseconds delay for MSP to start listening
           usleep(200000);
@@ -122,7 +122,7 @@ void* mainThread(void* arg0) {
         }
       }
 
-      PIN_setOutputValue(pinHandle, Board_PIN_LED1, 0);  // LED1 OFF
+      PIN_setOutputValue(pinHandle, Board_PIN_GLED, 0);  // LED1 OFF
     }
   }
 }
