@@ -22,6 +22,8 @@ typedef enum {
 
 typedef enum { IDLE, PIECE_SELECTED } SelectionState;
 
+typedef enum { PLAYER_RED = 1, PLAYER_BLACK = 2 } Player;
+
 typedef struct {
   int from_row;
   int from_col;
@@ -38,10 +40,11 @@ typedef struct {
   int selected_col;
   Move last_move;
   bool last_move_valid;
+  Player current_player;
 } GameState;
 
 // Function prototypes
-void CHECKERS_init(GameState* state);
+void CHECKERS_init(GameState* state, Player player);
 void CHECKERS_draw_board(Graphics_Context* pContext, const GameState* state);
 void CHECKERS_encode_move(const Move* move, char* move_buffer);
 bool CHECKERS_apply_move(GameState* state, const Move* move);

@@ -33,6 +33,9 @@ void handle_input(GameState* game);
 
 // Global variables
 Graphics_Context g_graphicsContext;
+bool my_turn = true;  // Player 1 starts first
+bool move_ready_to_send = false;
+Move pending_move;
 
 void main(void) {
   // Stop WDT
@@ -63,7 +66,7 @@ void main(void) {
 
   // Game state initialization
   GameState game;
-  CHECKERS_init(&game);
+  CHECKERS_init(&game, PLAYER_RED);  // Player 1 is RED
 
   // Initial draw
   Graphics_clearDisplay(&g_graphicsContext);
@@ -72,14 +75,46 @@ void main(void) {
   // Main loop
   int frame_counter = 0;
   while (1) {
-    __delay_cycles(POLL_DELAY_CYCLES);
-    HAL_ADC_trigger_continuous_conversion();
-    handle_input(&game);
+    if (my_turn) {
+      // MY TURN: Handle input and wait for move
+      if (!move_ready_to_send) {
+        __delay_cycles(POLL_DELAY_CYCLES);
+        HAL_ADC_trigger_continuous_conversion();
+        handle_input(&game);
 
-    frame_counter++;
-    if (frame_counter >= RENDER_INTERVAL) {
-      CHECKERS_draw_board(&g_graphicsContext, &game);
-      frame_counter = 0;
+        frame_counter++;
+        if (frame_counter >= RENDER_INTERVAL) {
+          CHECKERS_draw_board(&g_graphicsContext, &game);
+          frame_counter = 0;
+        }
+      } else {
+        // Move is ready to send - draw board one final time
+        CHECKERS_draw_board(&g_graphicsContext, &game);
+        __delay_cycles(8000000);  // 0.5 second delay to see the move
+
+        // Send move to opponent
+        char move_buffer[8];
+        CHECKERS_encode_move(&pending_move, move_buffer);
+        send_string(move_buffer);
+
+        // Switch to opponent's turn
+        move_ready_to_send = false;
+        my_turn = false;
+      }
+    } else {
+      // LISTENING MODE: Wait for opponent's move
+      char receive_buffer[40];
+      bool ok =
+          receive_string(receive_buffer, sizeof(receive_buffer), 48000000);
+
+      if (ok) {
+        CHECKERS_apply_move_from_string(receive_buffer, &game);
+        CHECKERS_draw_board(&g_graphicsContext, &game);
+        __delay_cycles(8000000);  // 0.5 second delay
+        my_turn = true;
+      } else {
+        __delay_cycles(8000000);
+      }
     }
   }
 }
@@ -88,6 +123,7 @@ void handle_input(GameState* game) {
   // Joystick movement
   static int prev_dir_x = 0;
   static int prev_dir_y = 0;
+  static bool first_read = true;
 
   float joystick_x = JOYSTICK_get_x();
   float joystick_y = JOYSTICK_get_y();
@@ -102,6 +138,13 @@ void handle_input(GameState* game) {
     dir_x = 1;
   else if (joystick_x < -JOYSTICK_THRESHOLD)
     dir_x = -1;
+
+  // Initialize prev values on first read to avoid initial movement
+  if (first_read) {
+    prev_dir_x = dir_x;
+    prev_dir_y = dir_y;
+    first_read = false;
+  }
 
   // Move only on a new direction
   if ((dir_x != 0 || dir_y != 0) &&
@@ -126,8 +169,11 @@ void handle_input(GameState* game) {
   } else {                             // PIECE_SELECTED
     if (s2_state && !prev_s2_state) {  // S2 pressed
       CHECKERS_confirm_move(game);
-      Move move = CHECKERS_get_move(game);
-      CHECKERS_apply_move(game, &move);
+      pending_move = CHECKERS_get_move(game);
+      // Only send if the move is valid
+      if (CHECKERS_apply_move(game, &pending_move)) {
+        move_ready_to_send = true;
+      }
     }
   }
 
