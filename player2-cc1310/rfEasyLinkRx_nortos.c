@@ -80,54 +80,49 @@ void* mainThread(void* arg0) {
   PIN_setOutputValue(pinHandle, Board_PIN_LED1, 0);
   sleep(1);
 
-  char rxBuffer[32];
-  char txBuffer[16];
-  uint16_t fallback_counter = 0;  // For testing
+  char rxBuffer[40];
+  char txBuffer[40];
 
   while (1) {
-    // LISTENING MODE: Wait for RF packet
+    // LISTENING MODE: Wait for RF packet (opponent's move)
     EasyLink_RxPacket rxPacket = {{0}, 0, 0, 0, 0, {0}};
-    rxPacket.rxTimeout = EasyLink_ms_To_RadioTime(5000);  // 5 second timeout
-
-    uint16_t received_number = fallback_counter;  // Default fallback
+    rxPacket.rxTimeout = EasyLink_ms_To_RadioTime(0);  // Wait indefinitely
 
     if (EasyLink_receive(&rxPacket) == EasyLink_Status_Success) {
-      // Got RF packet
+      // Got RF packet with opponent's move
       PIN_setOutputValue(pinHandle, Board_PIN_LED1,
                          1);  // LED1 ON - RF received
       char* rf_payload = (char*)&rxPacket.payload[2];
-      received_number = (uint16_t)atoi(rf_payload);
+      strncpy(txBuffer, rf_payload, sizeof(txBuffer) - 1);
+      txBuffer[sizeof(txBuffer) - 1] = '\0';
       PIN_setOutputValue(pinHandle, Board_PIN_LED1, 0);  // LED1 OFF
-    }
 
-    // 200 milliseconds delay for MSP to start listening
-    usleep(200000);
+      // 200 milliseconds delay for MSP to start listening
+      usleep(200000);
 
-    // Send received number to MSP via UART
-    sprintf(txBuffer, "%u\r\n", received_number);
-    UART_write(uartHandle, txBuffer, strlen(txBuffer));
+      // Send received move to MSP via UART
+      UART_write(uartHandle, txBuffer, strlen(txBuffer));
 
-    // Toggle LED2 to show we sent to MSP
-    PIN_setOutputValue(pinHandle, Board_PIN_LED2,
-                       !PIN_getOutputValue(Board_PIN_LED2));
+      // Toggle LED2 to show we sent to MSP
+      PIN_setOutputValue(pinHandle, Board_PIN_LED2,
+                         !PIN_getOutputValue(Board_PIN_LED2));
 
-    // Now wait for MSP to send back the response
-    memset(rxBuffer, 0, sizeof(rxBuffer));
-    int bytesRead = UART_read(uartHandle, rxBuffer, sizeof(rxBuffer) - 1);
+      // Now wait for MSP to send back its move
+      memset(rxBuffer, 0, sizeof(rxBuffer));
+      int bytesRead = UART_read(uartHandle, rxBuffer, sizeof(rxBuffer) - 1);
 
-    if (bytesRead > 0) {
-      uint16_t response_number = (uint16_t)atoi(rxBuffer);
-      fallback_counter = response_number;
+      if (bytesRead > 0) {
+        // Send MSP's move back via RF
+        EasyLink_TxPacket txPacket = {{0}, 0, 0, {0}};
+        txPacket.payload[0] = (uint8_t)(seqNumber >> 8);
+        txPacket.payload[1] = (uint8_t)(seqNumber++);
+        strncpy((char*)&txPacket.payload[2], rxBuffer,
+                RFEASYLINKTXPAYLOAD_LENGTH - 3);
+        txPacket.len = RFEASYLINKTXPAYLOAD_LENGTH;
+        txPacket.dstAddr[0] = 0xaa;
 
-      // Send response back via RF
-      EasyLink_TxPacket txPacket = {{0}, 0, 0, {0}};
-      txPacket.payload[0] = (uint8_t)(seqNumber >> 8);
-      txPacket.payload[1] = (uint8_t)(seqNumber++);
-      sprintf((char*)&txPacket.payload[2], "%u", response_number);
-      txPacket.len = RFEASYLINKTXPAYLOAD_LENGTH;
-      txPacket.dstAddr[0] = 0xaa;
-
-      EasyLink_transmit(&txPacket);
+        EasyLink_transmit(&txPacket);
+      }
     }
   }
 }
