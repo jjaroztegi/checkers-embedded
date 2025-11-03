@@ -18,18 +18,18 @@
 // Game Headers
 #include <comm/protocol.h>
 #include <game/checkers.h>
+#include <input/input.h>
 
 // Constants
 #define POLLING_RATE 60
 #define RENDER_INTERVAL 3                            // 60/3 = 20fps
 #define POLL_DELAY_CYCLES (16000000 / POLLING_RATE)  // 60Hz
-#define JOYSTICK_THRESHOLD 85
 
 // Local function definitions
 void Clocks_init();
 void GUI_print_fixed_text();
 void GUI_print_status(char* status, int line);
-void handle_input(GameState* game);
+void handle_input(GameState* game, InputState* input);
 
 // Global variables
 Graphics_Context g_graphicsContext;
@@ -60,6 +60,7 @@ void main(void) {
   // External devices
   CRYSTALFONTZ_init();
   HAL_DIGIN_config();
+  INPUT_init();
 
   GUI_print_fixed_text();
   GUI_print_status("READY!", 40);
@@ -79,8 +80,9 @@ void main(void) {
       // MY TURN: Handle input and wait for move
       if (!move_ready_to_send) {
         __delay_cycles(POLL_DELAY_CYCLES);
-        HAL_ADC_trigger_continuous_conversion();
-        handle_input(&game);
+        HAL_ADC_trigger_single_conversion();
+        InputState input = INPUT_poll();
+        handle_input(&game, &input);
 
         frame_counter++;
         if (frame_counter >= RENDER_INTERVAL) {
@@ -119,55 +121,19 @@ void main(void) {
   }
 }
 
-void handle_input(GameState* game) {
-  // Joystick movement
-  static int prev_dir_x = 0;
-  static int prev_dir_y = 0;
-  static bool first_read = true;
-
-  float joystick_x = JOYSTICK_get_x();
-  float joystick_y = JOYSTICK_get_y();
-  int dir_x = 0;
-  int dir_y = 0;
-
-  if (joystick_y > JOYSTICK_THRESHOLD)
-    dir_y = -1;
-  else if (joystick_y < -JOYSTICK_THRESHOLD)
-    dir_y = 1;
-  else if (joystick_x > JOYSTICK_THRESHOLD)
-    dir_x = 1;
-  else if (joystick_x < -JOYSTICK_THRESHOLD)
-    dir_x = -1;
-
-  // Initialize prev values on first read to avoid initial movement
-  if (first_read) {
-    prev_dir_x = dir_x;
-    prev_dir_y = dir_y;
-    first_read = false;
+void handle_input(GameState* game, InputState* input) {
+  // Handle cursor movement
+  if (input->dir_x != 0 || input->dir_y != 0) {
+    CHECKERS_move_cursor(input->dir_x, input->dir_y, game);
   }
 
-  // Move only on a new direction
-  if ((dir_x != 0 || dir_y != 0) &&
-      (dir_x != prev_dir_x || dir_y != prev_dir_y)) {
-    CHECKERS_move_cursor(dir_x, dir_y, game);
-  }
-
-  prev_dir_x = dir_x;
-  prev_dir_y = dir_y;
-
-  // Button presses
-  static bool prev_s1_state = false;
-  static bool prev_s2_state = false;
-
-  bool s1_state = SWITCH_get_edumkii_S1();
-  bool s2_state = SWITCH_get_edumkii_S2();
-
+  // Handle button presses
   if (game->selection_state == IDLE) {
-    if (s1_state && !prev_s1_state) {  // S1 pressed
+    if (input->select_pressed) {
       CHECKERS_select_piece(game);
     }
-  } else {                             // PIECE_SELECTED
-    if (s2_state && !prev_s2_state) {  // S2 pressed
+  } else {  // PIECE_SELECTED
+    if (input->confirm_pressed) {
       CHECKERS_confirm_move(game);
       pending_move = CHECKERS_get_move(game);
       // Only send if the move is valid
@@ -176,9 +142,6 @@ void handle_input(GameState* game) {
       }
     }
   }
-
-  prev_s1_state = s1_state;
-  prev_s2_state = s2_state;
 }
 
 void Clocks_init() {
