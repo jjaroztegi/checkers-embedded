@@ -25,16 +25,18 @@
 #define RENDER_INTERVAL 3                            // 60/3 = 20fps
 #define POLL_DELAY_CYCLES (16000000 / POLLING_RATE)  // 60Hz
 
+// Turn state machine
+typedef enum { TURN_PLAYING, TURN_SENDING, TURN_WAITING } TurnState;
+
 // Local function definitions
 void Clocks_init();
 void GUI_print_fixed_text();
 void GUI_print_status(char* status, int line);
-void handle_input(GameState* game, InputState* input);
+void handle_input(GameState* game, InputState* input, TurnState* turn_state);
 
 // Global variables
 Graphics_Context g_graphicsContext;
-bool my_turn = true;  // Player 1 starts first
-bool move_ready_to_send = false;
+TurnState turn_state = TURN_PLAYING;
 Move pending_move;
 
 void main(void) {
@@ -76,21 +78,23 @@ void main(void) {
   // Main loop
   int frame_counter = 0;
   while (1) {
-    if (my_turn) {
-      // MY TURN: Handle input and wait for move
-      if (!move_ready_to_send) {
+    switch (turn_state) {
+      case TURN_PLAYING: {
+        // Accept input and handle moves
         __delay_cycles(POLL_DELAY_CYCLES);
         HAL_ADC_trigger_single_conversion();
         InputState input = INPUT_poll();
-        handle_input(&game, &input);
+        handle_input(&game, &input, &turn_state);
 
         frame_counter++;
         if (frame_counter >= RENDER_INTERVAL) {
           CHECKERS_draw_board(&g_graphicsContext, &game);
           frame_counter = 0;
         }
-      } else {
-        // Move is ready to send - draw board one final time
+        break;
+      }
+      case TURN_SENDING:
+        // Draw final board state
         CHECKERS_draw_board(&g_graphicsContext, &game);
         __delay_cycles(8000000);  // 0.5 second delay to see the move
 
@@ -99,29 +103,36 @@ void main(void) {
         CHECKERS_encode_move(&pending_move, move_buffer);
         send_string(move_buffer);
 
-        // Switch to opponent's turn
-        move_ready_to_send = false;
-        my_turn = false;
-      }
-    } else {
-      // LISTENING MODE: Wait for opponent's move
-      char receive_buffer[8];
-      bool ok =
-          receive_string(receive_buffer, sizeof(receive_buffer), 48000000);
+        // Switch to waiting for opponent
+        turn_state = TURN_WAITING;
+        frame_counter = 0;
+        break;
 
-      if (ok) {
-        CHECKERS_apply_move_from_string(receive_buffer, &game);
-        CHECKERS_draw_board(&g_graphicsContext, &game);
-        __delay_cycles(8000000);  // 0.5 second delay
-        my_turn = true;
-      } else {
-        __delay_cycles(8000000);
+      case TURN_WAITING: {
+        // Wait for opponent's move
+        char receive_buffer[8];
+        bool ok =
+            receive_string(receive_buffer, sizeof(receive_buffer), 48000000);
+
+        if (ok) {
+          CHECKERS_apply_move_from_string(receive_buffer, &game);
+          CHECKERS_draw_board(&g_graphicsContext, &game);
+          __delay_cycles(8000000);  // 0.5 second delay
+          turn_state = TURN_PLAYING;
+        } else {
+          __delay_cycles(8000000);
+        }
+        break;
       }
     }
   }
 }
 
-void handle_input(GameState* game, InputState* input) {
+void handle_input(GameState* game, InputState* input, TurnState* turn_state) {
+  if (*turn_state != TURN_PLAYING) {
+    return;
+  }
+
   // Handle cursor movement
   if (input->dir_x != 0 || input->dir_y != 0) {
     CHECKERS_move_cursor(input->dir_x, input->dir_y, game);
@@ -138,7 +149,7 @@ void handle_input(GameState* game, InputState* input) {
       pending_move = CHECKERS_get_move(game);
       // Only send if the move is valid
       if (CHECKERS_apply_move(game, &pending_move)) {
-        move_ready_to_send = true;
+        *turn_state = TURN_SENDING;
       }
     }
   }
