@@ -83,18 +83,17 @@ void* mainThread(void* arg0) {
   PIN_setOutputValue(pinHandle, Board_PIN_LED1, 0);
   sleep(1);
 
-  char rxBuffer[32];
-  char txBuffer[16];
+  char rxBuffer[40];
+  char txBuffer[40];
 
   while (1) {
-    // LISTENING MODE: Wait for incoming number
+    // LISTENING MODE: Wait for incoming move string from MSP430
     memset(rxBuffer, 0, sizeof(rxBuffer));
     int bytesRead = UART_read(uartHandle, rxBuffer, sizeof(rxBuffer) - 1);
     if (bytesRead > 0) {
       PIN_setOutputValue(pinHandle, Board_PIN_LED1, 1);  // LED1 ON - receiving
-      uint16_t received_number = (uint16_t)atoi(rxBuffer);
 
-      // Create and send RF packet
+      // Create and send RF packet with the move string
       EasyLink_TxPacket txPacket = {{0}, 0, 0, {0}};
       txPacket.payload[0] = (uint8_t)(seqNumber >> 8);
       txPacket.payload[1] = (uint8_t)(seqNumber++);
@@ -103,29 +102,25 @@ void* mainThread(void* arg0) {
       txPacket.len = RFEASYLINKTXPAYLOAD_LENGTH;
       txPacket.dstAddr[0] = 0xaa;
 
-      uint16_t response_number = received_number;  // Default fallback
-
       if (EasyLink_transmit(&txPacket) == EasyLink_Status_Success) {
-        // Try to receive RF response
+        // Wait to receive RF response (opponent's move)
         EasyLink_RxPacket rxPacket = {{0}, 0, 0, 0, 0, {0}};
-        rxPacket.rxTimeout =
-            EasyLink_ms_To_RadioTime(2000);  // 2 second timeout
+        rxPacket.rxTimeout = EasyLink_ms_To_RadioTime(0);  // Wait indefinitely
         if (EasyLink_receive(&rxPacket) == EasyLink_Status_Success) {
-          // Got RF response - use it
+          // Got RF response - use opponent's move
           char* rf_payload = (char*)&rxPacket.payload[2];
-          response_number = (uint16_t)atoi(rf_payload);
+          strncpy(txBuffer, rf_payload, sizeof(txBuffer) - 1);
+          txBuffer[sizeof(txBuffer) - 1] = '\0';
           PIN_setOutputValue(pinHandle, Board_PIN_LED2,
                              !PIN_getOutputValue(Board_PIN_LED2));
+
+          // 200 milliseconds delay for MSP to start listening
+          usleep(200000);
+
+          // Send response back to MSP
+          UART_write(uartHandle, txBuffer, strlen(txBuffer));
         }
-        // If RF receive fails, we just use the fallback value
       }
-
-      // 200 milliseconds delay for MSP to start listening
-      usleep(200000);
-
-      // Send response back to MSP
-      sprintf(txBuffer, "%u\r\n", response_number);
-      UART_write(uartHandle, txBuffer, strlen(txBuffer));
 
       PIN_setOutputValue(pinHandle, Board_PIN_LED1, 0);  // LED1 OFF
     }
