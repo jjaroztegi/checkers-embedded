@@ -7,19 +7,19 @@ bool flag_edumkii_S2;
 
 void HAL_DIGIN_init_gpio()
 {
-    // EDUMII S1
+    // EDUMKII S1
     GPIO_setAsInputPin(GPIO_PORT_P4, GPIO_PIN3);
-    // EDUMII S2
+    // EDUMKII S2
     GPIO_setAsInputPin(GPIO_PORT_P4, GPIO_PIN2);
 }
 
 void HAL_DIGIN_config()
 {
-    // EDUMII S1
+    // EDUMKII S1
     GPIO_selectInterruptEdge(GPIO_PORT_P4, GPIO_PIN3, GPIO_HIGH_TO_LOW_TRANSITION);
     GPIO_clearInterrupt(GPIO_PORT_P4, GPIO_PIN3);
     GPIO_enableInterrupt(GPIO_PORT_P4, GPIO_PIN3);
-    // EDUMII S2
+    // EDUMKII S2
     GPIO_selectInterruptEdge(GPIO_PORT_P4, GPIO_PIN2, GPIO_HIGH_TO_LOW_TRANSITION);
     GPIO_clearInterrupt(GPIO_PORT_P4, GPIO_PIN2);
     GPIO_enableInterrupt(GPIO_PORT_P4, GPIO_PIN2);
