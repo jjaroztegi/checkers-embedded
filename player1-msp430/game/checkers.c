@@ -15,7 +15,7 @@ static int digit_to_row(char digit) {
   return -1;
 }
 
-void CHECKERS_init(GameState* state) {
+void CHECKERS_init(GameState* state, Player player) {
   // Clear board
   int i, j, row, col;
   for (i = 0; i < 8; i++) {
@@ -42,11 +42,13 @@ void CHECKERS_init(GameState* state) {
   }
 
   state->selection_state = IDLE;
-  state->hovered_row = 0;
+  state->hovered_row =
+      (player == PLAYER_RED) ? 7 : 0;  // Red starts at bottom, Black at top
   state->hovered_col = 0;
   state->selected_row = -1;
   state->selected_col = -1;
   state->last_move_valid = false;
+  state->current_player = PLAYER_RED;  // Red always starts first
 }
 
 void CHECKERS_draw_board(Graphics_Context* pContext, const GameState* state) {
@@ -130,20 +132,74 @@ static bool decode_move(const char* move_str, Move* move) {
 }
 
 bool CHECKERS_apply_move(GameState* state, const Move* move) {
-  //- TODO: Add check for valid move (e.g. player's turn, piece type, direction)
   int captured_row, captured_col;
+  PieceType moving_piece;
+  int row_diff, col_diff;
 
+  // Bounds checking
   if (move->from_row < 0 || move->from_row >= 8 || move->from_col < 0 ||
       move->from_col >= 8 || move->to_row < 0 || move->to_row >= 8 ||
       move->to_col < 0 || move->to_col >= 8)
     return false;
+
+  // Check source square has a piece
   if (state->board[move->from_row][move->from_col] == EMPTY) return false;
+
+  // Check destination square is empty
   if (state->board[move->to_row][move->to_col] != EMPTY) return false;
 
+  moving_piece = state->board[move->from_row][move->from_col];
+
+  // Validate turn: player can only move their own pieces
+  if (state->current_player == PLAYER_RED) {
+    if (moving_piece != RED_PIECE && moving_piece != RED_KING) return false;
+  } else {
+    if (moving_piece != BLACK_PIECE && moving_piece != BLACK_KING) return false;
+  }
+
+  row_diff = abs(move->to_row - move->from_row);
+  col_diff = abs(move->to_col - move->from_col);
+
+  // Must move diagonally (row and column change by same amount)
+  if (row_diff != col_diff) return false;
+
+  // Can only move 1 or 2 squares diagonally
+  if (row_diff != 1 && row_diff != 2) return false;
+
+  // If moving 2 squares, must be capturing an opponent piece
+  if (row_diff == 2) {
+    captured_row = (move->from_row + move->to_row) / 2;
+    captured_col = (move->from_col + move->to_col) / 2;
+    PieceType captured_piece = state->board[captured_row][captured_col];
+
+    // Must have a piece in the middle
+    if (captured_piece == EMPTY) return false;
+
+    // Can't capture your own piece
+    if ((moving_piece == RED_PIECE || moving_piece == RED_KING) &&
+        (captured_piece == RED_PIECE || captured_piece == RED_KING))
+      return false;
+    if ((moving_piece == BLACK_PIECE || moving_piece == BLACK_KING) &&
+        (captured_piece == BLACK_PIECE || captured_piece == BLACK_KING))
+      return false;
+  }
+
+  // Direction validation (only for non-king pieces)
+  if (moving_piece == RED_PIECE) {
+    // Red pieces can only move up (decreasing row)
+    if (move->to_row > move->from_row) return false;
+  } else if (moving_piece == BLACK_PIECE) {
+    // Black pieces can only move down (increasing row)
+    if (move->to_row < move->from_row) return false;
+  }
+  // Kings can move in any direction (no restriction)
+
+  // Move is valid - apply it
   state->board[move->to_row][move->to_col] =
       state->board[move->from_row][move->from_col];
   state->board[move->from_row][move->from_col] = EMPTY;
 
+  // Promote to king if reached opposite end
   if (state->board[move->to_row][move->to_col] == RED_PIECE &&
       move->to_row == 0)
     state->board[move->to_row][move->to_col] = RED_KING;
@@ -151,11 +207,16 @@ bool CHECKERS_apply_move(GameState* state, const Move* move) {
            move->to_row == 7)
     state->board[move->to_row][move->to_col] = BLACK_KING;
 
-  if (abs(move->to_row - move->from_row) == 2) {
+  // Remove captured piece if this was a capture
+  if (row_diff == 2) {
     captured_row = (move->from_row + move->to_row) / 2;
     captured_col = (move->from_col + move->to_col) / 2;
     state->board[captured_row][captured_col] = EMPTY;
   }
+
+  // Switch turns
+  state->current_player =
+      (state->current_player == PLAYER_RED) ? PLAYER_BLACK : PLAYER_RED;
 
   state->last_move = *move;
   state->last_move_valid = true;
