@@ -90,12 +90,12 @@ void* mainThread(void* arg0) {
 
     if (EasyLink_receive(&rxPacket) == EasyLink_Status_Success) {
       // Got RF packet with opponent's move
-      PIN_setOutputValue(pinHandle, Board_PIN_GLED,
-                         1);  // LED1 ON - RF received
+      PIN_setOutputValue(pinHandle, Board_PIN_RLED,
+                         1);  // Red LED - RF received
+
       char* rf_payload = (char*)&rxPacket.payload[2];
       strncpy(txBuffer, rf_payload, sizeof(txBuffer) - 1);
       txBuffer[sizeof(txBuffer) - 1] = '\0';
-      PIN_setOutputValue(pinHandle, Board_PIN_GLED, 0);  // LED1 OFF
 
       // 200 milliseconds delay for MSP to start listening
       usleep(200000);
@@ -103,9 +103,9 @@ void* mainThread(void* arg0) {
       // Send received move to MSP via UART
       UART_write(uartHandle, txBuffer, strlen(txBuffer));
 
-      // Toggle LED2 to show we sent to MSP
-      PIN_setOutputValue(pinHandle, Board_PIN_RLED,
-                         !PIN_getOutputValue(Board_PIN_RLED));
+      PIN_setOutputValue(pinHandle, Board_PIN_GLED,
+                         1);  // Green LED - UART sent to MSP
+      PIN_setOutputValue(pinHandle, Board_PIN_RLED, 0);  // Red LED OFF
 
       // Now wait for MSP to send back its move
       memset(rxBuffer, 0, sizeof(rxBuffer));
@@ -123,6 +123,8 @@ void* mainThread(void* arg0) {
 
         EasyLink_transmit(&txPacket);
       }
+
+      PIN_setOutputValue(pinHandle, Board_PIN_GLED, 0);  // Green LED OFF
     }
   }
 }

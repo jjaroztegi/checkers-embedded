@@ -91,7 +91,8 @@ void* mainThread(void* arg0) {
     memset(rxBuffer, 0, sizeof(rxBuffer));
     int bytesRead = UART_read(uartHandle, rxBuffer, sizeof(rxBuffer) - 1);
     if (bytesRead > 0) {
-      PIN_setOutputValue(pinHandle, Board_PIN_GLED, 1);  // LED1 ON - receiving
+      PIN_setOutputValue(pinHandle, Board_PIN_GLED,
+                         1);  // Green LED - UART received
 
       // Create and send RF packet with the move string
       EasyLink_TxPacket txPacket = {{0}, 0, 0, {0}};
@@ -103,6 +104,9 @@ void* mainThread(void* arg0) {
       txPacket.dstAddr[0] = 0xaa;
 
       if (EasyLink_transmit(&txPacket) == EasyLink_Status_Success) {
+        PIN_setOutputValue(pinHandle, Board_PIN_RLED,
+                           1);  // Red LED - RF transmitted
+
         // Wait to receive RF response (opponent's move)
         EasyLink_RxPacket rxPacket = {{0}, 0, 0, 0, 0, {0}};
         rxPacket.rxTimeout = EasyLink_ms_To_RadioTime(0);  // Wait indefinitely
@@ -111,8 +115,9 @@ void* mainThread(void* arg0) {
           char* rf_payload = (char*)&rxPacket.payload[2];
           strncpy(txBuffer, rf_payload, sizeof(txBuffer) - 1);
           txBuffer[sizeof(txBuffer) - 1] = '\0';
+
           PIN_setOutputValue(pinHandle, Board_PIN_RLED,
-                             !PIN_getOutputValue(Board_PIN_RLED));
+                             0);  // Red LED OFF - RF received
 
           // 200 milliseconds delay for MSP to start listening
           usleep(200000);
@@ -122,7 +127,7 @@ void* mainThread(void* arg0) {
         }
       }
 
-      PIN_setOutputValue(pinHandle, Board_PIN_GLED, 0);  // LED1 OFF
+      PIN_setOutputValue(pinHandle, Board_PIN_GLED, 0);  // Green LED OFF
     }
   }
 }
