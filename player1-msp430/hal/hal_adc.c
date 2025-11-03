@@ -82,7 +82,7 @@ __interrupt void ADC12_ISR(void)
     uint16_t status;
 
     status = ADC12_B_getInterruptStatus(ADC12_B_BASE, 0, ADC12_B_IFG1);
-    /* ADC12_B_MEMORY_2 conversion completed */
+    /* ADC12_B_MEMORY_1 conversion completed */
     if(status)
     {
         joystick_x_raw = ADC12_B_getResults(ADC12_B_BASE, ADC12_B_MEMORY_0);
