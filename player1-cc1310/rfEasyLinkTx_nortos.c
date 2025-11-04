@@ -22,6 +22,9 @@
 #include "easylink/EasyLink.h"
 #define RFEASYLINKTXPAYLOAD_LENGTH 30
 
+/* Communication state machine */
+typedef enum { UART_READING, RF_WRITING, RF_READING, UART_WRITING } CommState;
+
 /* Pin driver handle */
 static PIN_Handle pinHandle;
 static PIN_State pinState;
@@ -85,49 +88,70 @@ void* mainThread(void* arg0) {
 
   char rxBuffer[8];
   char txBuffer[8];
+  CommState state = UART_READING;
+  EasyLink_TxPacket txPacket = {{0}, 0, 0, {0}};
+  EasyLink_RxPacket rxPacket = {{0}, 0, 0, 0, 0, {0}};
 
   while (1) {
-    // LISTENING MODE: Wait for incoming move string from MSP430
-    memset(rxBuffer, 0, sizeof(rxBuffer));
-    int bytesRead = UART_read(uartHandle, rxBuffer, sizeof(rxBuffer) - 1);
-    if (bytesRead > 0) {
-      PIN_setOutputValue(pinHandle, Board_PIN_GLED,
-                         1);  // Green LED - UART received
+    switch (state) {
+      case UART_READING:
+        // Wait for incoming move string from MSP430
+        memset(rxBuffer, 0, sizeof(rxBuffer));
+        int bytesRead = UART_read(uartHandle, rxBuffer, sizeof(rxBuffer) - 1);
+        if (bytesRead > 0) {
+          PIN_setOutputValue(pinHandle, Board_PIN_GLED,
+                             1);  // Green LED - UART received
+          state = RF_WRITING;
+        }
+        break;
 
-      // Create and send RF packet with the move string
-      EasyLink_TxPacket txPacket = {{0}, 0, 0, {0}};
-      txPacket.payload[0] = (uint8_t)(seqNumber >> 8);
-      txPacket.payload[1] = (uint8_t)(seqNumber++);
-      strncpy((char*)&txPacket.payload[2], rxBuffer,
-              RFEASYLINKTXPAYLOAD_LENGTH - 3);
-      txPacket.len = RFEASYLINKTXPAYLOAD_LENGTH;
-      txPacket.dstAddr[0] = 0xaa;
+      case RF_WRITING:
+        // Create and send RF packet with the move string
+        memset(&txPacket, 0, sizeof(txPacket));
+        txPacket.payload[0] = (uint8_t)(seqNumber >> 8);
+        txPacket.payload[1] = (uint8_t)(seqNumber++);
+        strncpy((char*)&txPacket.payload[2], rxBuffer,
+                RFEASYLINKTXPAYLOAD_LENGTH - 3);
+        txPacket.len = RFEASYLINKTXPAYLOAD_LENGTH;
+        txPacket.dstAddr[0] = 0xaa;
 
-      if (EasyLink_transmit(&txPacket) == EasyLink_Status_Success) {
-        PIN_setOutputValue(pinHandle, Board_PIN_RLED,
-                           1);  // Red LED - RF transmitted
+        if (EasyLink_transmit(&txPacket) == EasyLink_Status_Success) {
+          PIN_setOutputValue(pinHandle, Board_PIN_RLED,
+                             1);  // Red LED - RF transmitted
+          state = RF_READING;
+        } else {
+          // Transmission failed, go back to waiting
+          PIN_setOutputValue(pinHandle, Board_PIN_GLED, 0);
+          state = UART_READING;
+        }
+        break;
 
+      case RF_READING:
         // Wait to receive RF response (opponent's move)
-        EasyLink_RxPacket rxPacket = {{0}, 0, 0, 0, 0, {0}};
+        memset(&rxPacket, 0, sizeof(rxPacket));
         rxPacket.rxTimeout = EasyLink_ms_To_RadioTime(0);  // Wait indefinitely
         if (EasyLink_receive(&rxPacket) == EasyLink_Status_Success) {
-          // Got RF response - use opponent's move
+          // Got RF response - extract opponent's move
           char* rf_payload = (char*)&rxPacket.payload[2];
           strncpy(txBuffer, rf_payload, sizeof(txBuffer) - 1);
           txBuffer[sizeof(txBuffer) - 1] = '\0';
 
           PIN_setOutputValue(pinHandle, Board_PIN_RLED,
                              0);  // Red LED OFF - RF received
-
-          // 200 milliseconds delay for MSP to start listening
-          usleep(200000);
-
-          // Send response back to MSP
-          UART_write(uartHandle, txBuffer, strlen(txBuffer));
+          state = UART_WRITING;
         }
-      }
+        break;
 
-      PIN_setOutputValue(pinHandle, Board_PIN_GLED, 0);  // Green LED OFF
+      case UART_WRITING:
+        // 200 milliseconds delay for MSP to start listening
+        usleep(200000);
+
+        // Send response back to MSP
+        UART_write(uartHandle, txBuffer, strlen(txBuffer));
+
+        PIN_setOutputValue(pinHandle, Board_PIN_GLED, 0);  // Green LED OFF
+        state = UART_READING;
+        break;
     }
   }
 }

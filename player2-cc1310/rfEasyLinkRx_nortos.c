@@ -23,6 +23,9 @@
 
 #define RFEASYLINKTXPAYLOAD_LENGTH 30
 
+/* Communication state machine */
+typedef enum { RF_READING, UART_WRITING, UART_READING, RF_WRITING } CommState;
+
 /* Pin driver handle */
 static PIN_Handle pinHandle;
 static PIN_State pinState;
@@ -82,38 +85,57 @@ void* mainThread(void* arg0) {
 
   char rxBuffer[8];
   char txBuffer[8];
+  CommState state = RF_READING;
+  EasyLink_RxPacket rxPacket = {{0}, 0, 0, 0, 0, {0}};
+  EasyLink_TxPacket txPacket = {{0}, 0, 0, {0}};
 
   while (1) {
-    // LISTENING MODE: Wait for RF packet (opponent's move)
-    EasyLink_RxPacket rxPacket = {{0}, 0, 0, 0, 0, {0}};
-    rxPacket.rxTimeout = EasyLink_ms_To_RadioTime(0);  // Wait indefinitely
+    switch (state) {
+      case RF_READING:
+        // Wait for RF packet (opponent's move)
+        memset(&rxPacket, 0, sizeof(rxPacket));
+        rxPacket.rxTimeout = EasyLink_ms_To_RadioTime(0);  // Wait indefinitely
 
-    if (EasyLink_receive(&rxPacket) == EasyLink_Status_Success) {
-      // Got RF packet with opponent's move
-      PIN_setOutputValue(pinHandle, Board_PIN_RLED,
-                         1);  // Red LED - RF received
+        if (EasyLink_receive(&rxPacket) == EasyLink_Status_Success) {
+          // Got RF packet with opponent's move
+          PIN_setOutputValue(pinHandle, Board_PIN_RLED,
+                             1);  // Red LED - RF received
 
-      char* rf_payload = (char*)&rxPacket.payload[2];
-      strncpy(txBuffer, rf_payload, sizeof(txBuffer) - 1);
-      txBuffer[sizeof(txBuffer) - 1] = '\0';
+          char* rf_payload = (char*)&rxPacket.payload[2];
+          strncpy(txBuffer, rf_payload, sizeof(txBuffer) - 1);
+          txBuffer[sizeof(txBuffer) - 1] = '\0';
 
-      // 200 milliseconds delay for MSP to start listening
-      usleep(200000);
+          state = UART_WRITING;
+        }
+        break;
 
-      // Send received move to MSP via UART
-      UART_write(uartHandle, txBuffer, strlen(txBuffer));
+      case UART_WRITING:
+        // 200 milliseconds delay for MSP to start listening
+        usleep(200000);
 
-      PIN_setOutputValue(pinHandle, Board_PIN_GLED,
-                         1);  // Green LED - UART sent to MSP
-      PIN_setOutputValue(pinHandle, Board_PIN_RLED, 0);  // Red LED OFF
+        // Send received move to MSP via UART
+        UART_write(uartHandle, txBuffer, strlen(txBuffer));
 
-      // Now wait for MSP to send back its move
-      memset(rxBuffer, 0, sizeof(rxBuffer));
-      int bytesRead = UART_read(uartHandle, rxBuffer, sizeof(rxBuffer) - 1);
+        PIN_setOutputValue(pinHandle, Board_PIN_GLED,
+                           1);  // Green LED - UART sent to MSP
+        PIN_setOutputValue(pinHandle, Board_PIN_RLED, 0);  // Red LED OFF
 
-      if (bytesRead > 0) {
+        state = UART_READING;
+        break;
+
+      case UART_READING:
+        // Now wait for MSP to send back its move
+        memset(rxBuffer, 0, sizeof(rxBuffer));
+        int bytesRead = UART_read(uartHandle, rxBuffer, sizeof(rxBuffer) - 1);
+
+        if (bytesRead > 0) {
+          state = RF_WRITING;
+        }
+        break;
+
+      case RF_WRITING:
         // Send MSP's move back via RF
-        EasyLink_TxPacket txPacket = {{0}, 0, 0, {0}};
+        memset(&txPacket, 0, sizeof(txPacket));
         txPacket.payload[0] = (uint8_t)(seqNumber >> 8);
         txPacket.payload[1] = (uint8_t)(seqNumber++);
         strncpy((char*)&txPacket.payload[2], rxBuffer,
@@ -122,9 +144,10 @@ void* mainThread(void* arg0) {
         txPacket.dstAddr[0] = 0xaa;
 
         EasyLink_transmit(&txPacket);
-      }
 
-      PIN_setOutputValue(pinHandle, Board_PIN_GLED, 0);  // Green LED OFF
+        PIN_setOutputValue(pinHandle, Board_PIN_GLED, 0);  // Green LED OFF
+        state = RF_READING;
+        break;
     }
   }
 }
