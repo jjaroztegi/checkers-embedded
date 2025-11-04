@@ -1,7 +1,7 @@
-#include <input/input.h>
 #include <drivers/joystick.h>
 #include <drivers/switch.h>
 #include <hal/hal_adc.h>
+#include <input/input.h>
 
 #define JOYSTICK_THRESHOLD 85
 

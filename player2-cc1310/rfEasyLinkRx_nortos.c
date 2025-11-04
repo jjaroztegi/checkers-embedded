@@ -24,7 +24,7 @@
 #define RFEASYLINKTXPAYLOAD_LENGTH 30
 
 /* Communication state machine */
-typedef enum { RF_READING, UART_WRITING, UART_READING, RF_WRITING } CommState;
+typedef enum { RF_RECEIVING, UART_WRITING, UART_READING, RF_SENDING } CommState;
 
 /* Pin driver handle */
 static PIN_Handle pinHandle;
@@ -85,13 +85,13 @@ void* mainThread(void* arg0) {
 
   char rxBuffer[8];
   char txBuffer[8];
-  CommState state = RF_READING;
-  EasyLink_RxPacket rxPacket = {{0}, 0, 0, 0, 0, {0}};
-  EasyLink_TxPacket txPacket = {{0}, 0, 0, {0}};
+  CommState state = RF_RECEIVING;
+  EasyLink_RxPacket rxPacket = {0};
+  EasyLink_TxPacket txPacket = {0};
 
   while (1) {
     switch (state) {
-      case RF_READING:
+      case RF_RECEIVING:
         // Wait for RF packet (opponent's move)
         memset(&rxPacket, 0, sizeof(rxPacket));
         rxPacket.rxTimeout = EasyLink_ms_To_RadioTime(0);  // Wait indefinitely
@@ -129,11 +129,11 @@ void* mainThread(void* arg0) {
         int bytesRead = UART_read(uartHandle, rxBuffer, sizeof(rxBuffer) - 1);
 
         if (bytesRead > 0) {
-          state = RF_WRITING;
+          state = RF_SENDING;
         }
         break;
 
-      case RF_WRITING:
+      case RF_SENDING:
         // Send MSP's move back via RF
         memset(&txPacket, 0, sizeof(txPacket));
         txPacket.payload[0] = (uint8_t)(seqNumber >> 8);
@@ -146,7 +146,7 @@ void* mainThread(void* arg0) {
         EasyLink_transmit(&txPacket);
 
         PIN_setOutputValue(pinHandle, Board_PIN_GLED, 0);  // Green LED OFF
-        state = RF_READING;
+        state = RF_RECEIVING;
         break;
     }
   }

@@ -23,7 +23,7 @@
 #define RFEASYLINKTXPAYLOAD_LENGTH 30
 
 /* Communication state machine */
-typedef enum { UART_READING, RF_WRITING, RF_READING, UART_WRITING } CommState;
+typedef enum { UART_READING, RF_SENDING, RF_RECEIVING, UART_WRITING } CommState;
 
 /* Pin driver handle */
 static PIN_Handle pinHandle;
@@ -89,8 +89,8 @@ void* mainThread(void* arg0) {
   char rxBuffer[8];
   char txBuffer[8];
   CommState state = UART_READING;
-  EasyLink_TxPacket txPacket = {{0}, 0, 0, {0}};
-  EasyLink_RxPacket rxPacket = {{0}, 0, 0, 0, 0, {0}};
+  EasyLink_TxPacket txPacket = {0};
+  EasyLink_RxPacket rxPacket = {0};
 
   while (1) {
     switch (state) {
@@ -101,11 +101,11 @@ void* mainThread(void* arg0) {
         if (bytesRead > 0) {
           PIN_setOutputValue(pinHandle, Board_PIN_GLED,
                              1);  // Green LED - UART received
-          state = RF_WRITING;
+          state = RF_SENDING;
         }
         break;
 
-      case RF_WRITING:
+      case RF_SENDING:
         // Create and send RF packet with the move string
         memset(&txPacket, 0, sizeof(txPacket));
         txPacket.payload[0] = (uint8_t)(seqNumber >> 8);
@@ -118,7 +118,7 @@ void* mainThread(void* arg0) {
         if (EasyLink_transmit(&txPacket) == EasyLink_Status_Success) {
           PIN_setOutputValue(pinHandle, Board_PIN_RLED,
                              1);  // Red LED - RF transmitted
-          state = RF_READING;
+          state = RF_RECEIVING;
         } else {
           // Transmission failed, go back to waiting
           PIN_setOutputValue(pinHandle, Board_PIN_GLED, 0);
@@ -126,7 +126,7 @@ void* mainThread(void* arg0) {
         }
         break;
 
-      case RF_READING:
+      case RF_RECEIVING:
         // Wait to receive RF response (opponent's move)
         memset(&rxPacket, 0, sizeof(rxPacket));
         rxPacket.rxTimeout = EasyLink_ms_To_RadioTime(0);  // Wait indefinitely
