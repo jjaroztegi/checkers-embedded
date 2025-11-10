@@ -20,7 +20,7 @@
 
 /* EasyLink API Header files */
 #include "easylink/EasyLink.h"
-#define RFEASYLINKTXPAYLOAD_LENGTH 30
+#define RFEASYLINKTXPAYLOAD_LENGTH 8
 
 /* Communication state machine */
 typedef enum { UART_READING, RF_SENDING, RF_RECEIVING, UART_WRITING } CommState;
