@@ -7,12 +7,15 @@
 // HAL headers
 #include <hal/hal_adc.h>
 #include <hal/hal_digital_input.h>
+#include <hal/hal_i2c.h>
 #include <hal/hal_lcd.h>
 #include <hal/hal_uart.h>
 
 // Driver headers
 #include <drivers/crystalfontz.h>
 #include <drivers/joystick.h>
+#include <drivers/lcd_backlight.h>
+#include <drivers/opt3001.h>
 #include <drivers/switch.h>
 
 // Game Headers
@@ -48,11 +51,13 @@ void main(void) {
   HAL_LCD_init_gpio();
   HAL_UART_init_gpio();
   HAL_ADC_init_gpio();
+  HAL_I2C_init_gpio();
 
   PMM_unlockLPM5();
 
   HAL_LCD_config();
   HAL_UART_config();
+  HAL_I2C_config();
   HAL_ADC_config();
   HAL_DIGIN_init_gpio();
 
@@ -62,7 +67,12 @@ void main(void) {
   // External devices
   CRYSTALFONTZ_init();
   HAL_DIGIN_config();
+  OPT3001_config();
   INPUT_init();
+
+  // Initialize LCD backlight control
+  LCD_BACKLIGHT_init();
+  LCD_BACKLIGHT_set_brightness(50);  // Start 50%
 
   GUI_print_fixed_text();
   GUI_print_status("READY!", 40);
@@ -105,6 +115,12 @@ void main(void) {
           CHECKERS_draw_board(&g_graphicsContext, &game);
           frame_counter = 0;
         }
+
+        // Update backlight every ~1 second
+        if (frame_counter % 60 == 0) {
+          uint32_t lux = OPT3001_get_lux();
+          LCD_BACKLIGHT_adjust_for_ambient(lux);
+        }
         break;
       }
       case TURN_SENDING:
@@ -136,6 +152,11 @@ void main(void) {
         } else {
           __delay_cycles(8000000);
         }
+
+        // Update backlight while waiting
+        uint32_t lux = OPT3001_get_lux();
+        LCD_BACKLIGHT_adjust_for_ambient(lux);
+
         break;
       }
     }
