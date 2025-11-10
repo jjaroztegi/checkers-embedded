@@ -68,6 +68,7 @@ void main(void) {
   CRYSTALFONTZ_init();
   HAL_DIGIN_config();
   OPT3001_config();
+  INPUT_init();
 
   // Initialize LCD backlight control
   LCD_BACKLIGHT_init();
