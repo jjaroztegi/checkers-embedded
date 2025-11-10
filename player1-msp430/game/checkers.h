@@ -53,5 +53,6 @@ void CHECKERS_move_cursor(int dir_x, int dir_y, GameState* state);
 void CHECKERS_select_piece(GameState* state);
 void CHECKERS_confirm_move(GameState* state);
 Move CHECKERS_get_move(const GameState* state);
+Player CHECKERS_game_ended(GameState* state);
 
 #endif /* GAME_CHECKERS_H_ */

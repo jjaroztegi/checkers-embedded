@@ -78,6 +78,20 @@ void main(void) {
   // Main loop
   int frame_counter = 0;
   while (1) {
+    // Check for game end
+    Player winner = CHECKERS_game_ended(&game);
+    if (winner != 0) {
+      CHECKERS_draw_board(&g_graphicsContext, &game);
+      if (winner == PLAYER_RED) {
+        GUI_print_status("RED WINS!", 40);
+      } else {
+        GUI_print_status("BLACK WINS!", 40);
+      }
+      while (1) {
+        // Game over - halt
+      }
+    }
+
     switch (turn_state) {
       case TURN_PLAYING: {
         // Accept input and handle moves

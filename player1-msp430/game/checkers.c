@@ -265,3 +265,31 @@ Move CHECKERS_get_move(const GameState* state) {
   move.to_col = state->hovered_col;
   return move;
 }
+
+Player CHECKERS_game_ended(GameState* state) {
+  bool red_has_pieces = false;
+  bool black_has_pieces = false;
+  int row, col;
+
+  // Check if either player still has pieces
+  for (row = 0; row < 8; row++) {
+    for (col = 0; col < 8; col++) {
+      PieceType piece = state->board[row][col];
+      if (piece == RED_PIECE || piece == RED_KING) {
+        red_has_pieces = true;
+      } else if (piece == BLACK_PIECE || piece == BLACK_KING) {
+        black_has_pieces = true;
+      }
+    }
+  }
+
+  // Determine winner based on who lost all their pieces
+  if (!red_has_pieces) {
+    return PLAYER_BLACK;
+  } else if (!black_has_pieces) {
+    return PLAYER_RED;
+  }
+
+  // Game is still ongoing
+  return 0;
+}
