@@ -1,0 +1,92 @@
+# Jekyll Configuration for Wireless Checkers Project Documentation
+
+# Site settings
+title: "Wireless Checkers Project"
+description: "Two-player wireless checkers game using MSP430 and CC1310 microcontrollers"
+baseurl: "/checkers-embedded"
+url: "https://jjaroztegi.github.io"
+
+# Build settings
+markdown: kramdown
+theme: jekyll-theme-minimal
+
+# Kramdown settings
+kramdown:
+  input: GFM
+  auto_ids: true
+  syntax_highlighter: rouge
+  toc_levels: [1, 2, 3, 4]
+
+# Plugins
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+  - jekyll-sitemap
+
+# Exclude from processing
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+  - README.md
+
+# Include files
+include:
+  - _pages
+
+# Collections (if needed in the future)
+collections:
+  docs:
+    output: true
+    permalink: /:collection/:path/
+
+# Defaults
+defaults:
+  - scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: "default"
+  - scope:
+      path: ""
+      type: "posts"
+    values:
+      layout: "post"
+
+# Navigation
+navigation:
+  - title: Home
+    url: /
+  - title: Architecture
+    url: /architecture
+  - title: Communication Protocol
+    url: /communication-protocol
+  - title: Hardware Setup
+    url: /hardware-setup
+  - title: Build Guide
+    url: /build-guide
+
+# GitHub metadata
+repository: jjaroztegi/checkers-embedded
+github_username: jjaroztegi
+
+# SEO settings
+author: jjaroztegi
+
+social:
+  name: jjaroztegi
+  links:
+    - https://github.com/jjaroztegi
+
+# Display settings
+show_downloads: false
+logo:
+
+# Enable relative URLs for GitHub Pages
+relative_links:
+  enabled: true
+  collections: true
