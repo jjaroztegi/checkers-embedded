@@ -8,7 +8,10 @@ url: "https://jjaroztegi.github.io"
 
 # Build settings
 markdown: kramdown
-remote_theme: pages-themes/minimal@v0.2.0
+remote_theme: just-the-docs/just-the-docs@v0.10.0
+
+# Theme settings
+color_scheme: dark
 
 # Kramdown settings
 kramdown:
