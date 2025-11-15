@@ -1,0 +1,72 @@
+{
+  "env": {
+    "CCS_INSTALL_ROOT": "D:/Apps/ti/ccs1031/ccs",
+    "SIMPLELINK_CC13X0_SDK": "D:/Apps/ti/simplelink_cc13x0_sdk_4_10_01_01"
+  },
+  "configurations": [
+    {
+      "name": "Mac",
+      "includePath": [
+        "${workspaceFolder}",
+        "${workspaceFolder}/common_msp430",
+        "${workspaceFolder}/common_msp430/_ti_driverlib",
+        "${workspaceFolder}/common_msp430/_ti_driverlib/inc",
+        "${workspaceFolder}/common_msp430/_ti_grlib",
+        "${workspaceFolder}/common_msp430/_ti_grlib/fonts",
+        "${workspaceFolder}/common_msp430/comm",
+        "${workspaceFolder}/common_msp430/drivers",
+        "${workspaceFolder}/common_msp430/game",
+        "${workspaceFolder}/common_msp430/hal",
+        "${workspaceFolder}/common_msp430/input",
+        "${workspaceFolder}/common_cc1310",
+        "${workspaceFolder}/common_cc1310/easylink",
+        "${workspaceFolder}/common_cc1310/smartrf_settings",
+        "${env:CCS_INSTALL_ROOT}/ccs_base/msp430/include",
+        "${env:CCS_INSTALL_ROOT}/tools/compiler/ti-cgt-msp430_20.2.4.LTS/include",
+        "${env:SIMPLELINK_CC13X0_SDK}/source",
+        "${env:SIMPLELINK_CC13X0_SDK}/kernel/nortos",
+        "${env:SIMPLELINK_CC13X0_SDK}/kernel/nortos/posix",
+        "${env:CCS_INSTALL_ROOT}/tools/compiler/ti-cgt-arm_20.2.4.LTS/include"
+      ],
+      "defines": [
+        "__TI_COMPILER_VERSION__=20002004",
+        "__MSP430FR5994__",
+        "_MPU_ENABLE",
+        "__MSP430__",
+        "MSP430FRXX",
+        "__MSP430_HAS_MSP430XV2_CPU__",
+        "__MSP430_HAS_FRAM__"
+      ],
+      "compilerPath": "",
+      "cStandard": "c99",
+      "cppStandard": "c++11",
+      "intelliSenseMode": "macos-clang-x64",
+      "browse": {
+        "path": [
+          "${workspaceFolder}",
+          "${workspaceFolder}/common_msp430",
+          "${workspaceFolder}/common_msp430/_ti_driverlib",
+          "${workspaceFolder}/common_msp430/_ti_driverlib/inc",
+          "${workspaceFolder}/common_msp430/_ti_grlib",
+          "${workspaceFolder}/common_msp430/_ti_grlib/fonts",
+          "${workspaceFolder}/common_msp430/comm",
+          "${workspaceFolder}/common_msp430/drivers",
+          "${workspaceFolder}/common_msp430/game",
+          "${workspaceFolder}/common_msp430/hal",
+          "${workspaceFolder}/common_msp430/input",
+          "${workspaceFolder}/common_cc1310",
+          "${workspaceFolder}/common_cc1310/easylink",
+          "${workspaceFolder}/common_cc1310/smartrf_settings",
+          "${env:CCS_INSTALL_ROOT}/ccs_base/msp430/include",
+          "${env:CCS_INSTALL_ROOT}/tools/compiler/ti-cgt-msp430_20.2.4.LTS/include",
+          "${env:SIMPLELINK_CC13X0_SDK}/source",
+          "${env:SIMPLELINK_CC13X0_SDK}/kernel/nortos",
+          "${env:SIMPLELINK_CC13X0_SDK}/kernel/nortos/posix",
+          "${env:CCS_INSTALL_ROOT}/tools/compiler/ti-cgt-arm_20.2.4.LTS/include"
+        ],
+        "limitSymbolsToIncludedHeaders": true
+      }
+    }
+  ],
+  "version": 4
+}
