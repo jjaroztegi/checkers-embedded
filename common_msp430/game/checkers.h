@@ -43,7 +43,6 @@ typedef struct {
   Player current_player;
 } GameState;
 
-// Function prototypes
 void CHECKERS_init(GameState* state, Player player);
 void CHECKERS_draw_board(Graphics_Context* pContext, const GameState* state);
 void CHECKERS_encode_move(const Move* move, char* move_buffer);
@@ -54,5 +53,6 @@ void CHECKERS_select_piece(GameState* state);
 void CHECKERS_confirm_move(GameState* state);
 Move CHECKERS_get_move(const GameState* state);
 Player CHECKERS_game_ended(GameState* state);
+bool CHECKERS_find_valid_move(GameState* state, Move* move_to_fill);
 
 #endif /* GAME_CHECKERS_H_ */

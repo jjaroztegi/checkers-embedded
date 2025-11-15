@@ -290,6 +290,55 @@ Player CHECKERS_game_ended(GameState* state) {
     return PLAYER_RED;
   }
 
+  // Check for stalemate (loss)
+  Move dummy_move;
+  if (!CHECKERS_find_valid_move(state, &dummy_move)) {
+    if (state->current_player == PLAYER_RED) {
+      return PLAYER_BLACK;
+    } else {
+      return PLAYER_RED;
+    }
+  }
+
   // Game is still ongoing
   return PLAYER_NONE;
 }
+
+bool CHECKERS_find_valid_move(GameState* state, Move* move_to_fill) {
+  int r, c, i;
+
+  // 8 diagonal directions (4 simple, 4 jump)
+  int dr[] = {-1, -1, 1, 1, -2, -2, 2, 2};
+  int dc[] = {-1, 1, -1, 1, -2, 2, -2, 2};
+
+  Player current = state->current_player;
+  PieceType my_piece = (current == PLAYER_RED) ? RED_PIECE : BLACK_PIECE;
+  PieceType my_king = (current == PLAYER_RED) ? RED_KING : BLACK_KING;
+
+  // Iterate over the whole board
+  for (r = 0; r < 8; r++) {
+    for (c = 0; c < 8; c++) {
+      PieceType piece = state->board[r][c];
+
+      if (piece == my_piece || piece == my_king) {
+        for (i = 0; i < 8; i++) {
+          Move potential_move;
+          potential_move.from_row = r;
+          potential_move.from_col = c;
+          potential_move.to_row = r + dr[i];
+          potential_move.to_col = c + dc[i];
+
+          // Test the move on temp game state
+          GameState temp_state = *state;
+
+          if (CHECKERS_apply_move(&temp_state, &potential_move)) {
+            *move_to_fill = potential_move;
+            return true;
+          }
+        }
+      }
+    }
+  }
+  return false;  // No valid moves found for current player
+}
+
