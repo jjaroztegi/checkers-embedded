@@ -80,12 +80,6 @@ void* mainThread(void* arg0) {
   EasyLink_setFrequency(862000000);
   EasyLink_setRfPower(14);
 
-  // 2 second startup delay - sync with MSP430
-  PIN_setOutputValue(pinHandle, Board_PIN_GLED, 1);
-  sleep(2);
-  PIN_setOutputValue(pinHandle, Board_PIN_GLED, 0);
-  sleep(1);
-
   char rxBuffer[8];
   char txBuffer[8];
   CommState state = UART_READING;
