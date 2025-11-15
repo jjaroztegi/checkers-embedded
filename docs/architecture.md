@@ -8,26 +8,48 @@ The project implements a two-player checkers game using a distributed system arc
 
 This dual-MCU design decouples the real-time game logic from the complexities of managing the wireless communication stack.
 
+### 1.0. Code Organization
+
+To minimize code duplication and maintain consistency across both player units, shared code is organized into common directories:
+
+- **`common_msp430/`**: Contains all shared MSP430 code used by both `player1-msp430` and `player2-msp430` projects:
+
+  - **`_ti_driverlib/`**: Texas Instruments MSP430 driver library for peripheral management
+  - **`_ti_grlib/`**: Graphics library for LCD rendering
+  - **`comm/`**: Communication protocol implementation (UART handling, `protocol.c`)
+  - **`drivers/`**: Hardware drivers (LCD, joystick, light sensor, etc.)
+  - **`game/`**: Checkers game logic (`checkers.c`, board state management, move validation)
+  - **`hal/`**: Hardware abstraction layer
+  - **`input/`**: Input handling (joystick, buttons, debouncing)
+
+- **`common_cc1310/`**: Contains shared CC1310 code used by both `player1-cc1310` and `player2-cc1310` projects:
+  - **`easylink/`**: EasyLink wireless API implementation
+  - **`smartrf_settings/`**: RF configuration settings
+
+Each player-specific project (e.g., `player1-msp430`) contains only its `main.c` entry point and build configuration files, while referencing the shared modules from the common directories.
+
 ### 1.1. Component Responsibilities
 
 #### MSP430FR5994 (Game & UI Processor)
 
 The MSP430 serves as the "brain" of each player's unit, handling all user-facing tasks and game management.
 
-- **Game Logic:** Manages the checkers board state, validates moves, and enforces game rules (via `game/checkers.c`).
+- **Game Logic:** Manages the checkers board state, validates moves, and enforces game rules (implemented in `common_msp430/game/checkers.c`).
 - **Main Control Loop:** Operates a state machine to manage the player's turn (`TURN_PLAYING`, `TURN_SENDING`, `TURN_WAITING`).
-- **Display:** Renders the game board, pieces, and status messages to the EDUMKII's LCD screen using the `crystalfontz` driver.
-- **User Input:** Polls the EDUMKII's joystick and buttons, debounces them, and translates them into game actions (e.g., move cursor, select piece).
+- **Display:** Renders the game board, pieces, and status messages to the EDUMKII's LCD screen using the `crystalfontz` driver from `common_msp430/drivers/`.
+- **User Input:** Polls the EDUMKII's joystick and buttons, debounces them, and translates them into game actions (e.g., move cursor, select piece) using modules from `common_msp430/input/`.
 - **Peripheral Management:**
   - Reads the `OPT3001` ambient light sensor via I2C.
   - Controls the LCD backlight brightness via PWM, automatically adjusting for ambient light.
-- **Communication:** Communicates with its partner CC1310 processor over a UART (115200 baud) serial link.
+  - Hardware drivers are located in `common_msp430/drivers/`.
+- **Communication:** Communicates with its partner CC1310 processor over a UART (115200 baud) serial link using the protocol implementation in `common_msp430/comm/protocol.c`.
 
 #### CC1310 (Radio Co-Processor)
 
 The CC1310 functions as a simple, dedicated modem or "radio co-processor". It bridges the UART serial link from the MSP430 to the wireless RF link between players.
 
-- **Wireless Stack:** Manages the EasyLink RF API for radio operations.
+- **Wireless Stack:** Manages the EasyLink RF API for radio operations (implementation in `common_cc1310/easylink/`).
+- **RF Configuration:** Uses settings from `common_cc1310/smartrf_settings/` for radio parameters.
 - **Data Bridging:**
   1.  Listens for an ASCII move string (e.g., "A6B5") from the MSP430 on its `UART_READING` state.
   2.  Wraps this string into an 8-byte EasyLink packet and transmits it wirelessly (`RF_SENDING` state).
@@ -44,7 +66,7 @@ This is the serial link between the two microcontrollers within a single player 
 
 - **Physical Layer:** UART. The MSP430 uses `EUSCI_A3` on pins P6.0 (TX) and P6.1 (RX). The CC1310 uses `Board_UART0`.
 - **Configuration:** 115200 baud, 8-N-1.
-- **Data Format:** Null-terminated ASCII strings. The `comm/protocol.c` module handles sending and receiving strings (e.g., "A6B5") terminated by `\r` and `\n` characters.
+- **Data Format:** Null-terminated ASCII strings. The `common_msp430/comm/protocol.c` module handles sending and receiving strings (e.g., "A6B5") terminated by `\r` and `\n` characters.
 
 ### 2.2. External Protocol: CC1310 <-> CC1310 (RF EasyLink)
 

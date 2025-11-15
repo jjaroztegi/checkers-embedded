@@ -5,11 +5,14 @@ A two-player checkers game system using MSP430 and CC1310 microcontrollers with 
 ## Project Structure
 
 ```
-checkers/
-├── player1-msp430/     # Player 1 UI, display, and game logic (MSP430FR5994)
-├── player1-cc1310/     # Player 1 radio communication (CC1310)
-├── player2-msp430/     # Player 2 UI, display, and game logic (MSP430FR5994)
-└── player2-cc1310/     # Player 2 radio communication (CC1310)
+checkers-embedded/
+├── common_cc1310/           # Shared code for CC1310 (EasyLink, SmartRF)
+├── common_msp430/           # Shared code for MSP430 (DriverLib, GrLib, HAL, game)
+├── docs/                    # Documentation
+├── player1-cc1310/          # Player 1 radio communication (CC1310)
+├── player1-msp430/          # Player 1 UI and logic (MSP430FR5994)
+├── player2-cc1310/          # Player 2 radio communication (CC1310)
+└── player2-msp430/          # Player 2 UI and logic (MSP430FR5994)
 ```
 
 ## Architecture

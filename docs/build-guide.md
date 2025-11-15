@@ -17,6 +17,8 @@ It is important to install the SDK to a simple, root-level path (e.g., `C:/ti/si
 
 ## 2. Environment Setup
 
+### SDK Path Configuration
+
 The CC1310 projects depend on the SimpleLink SDK. You must inform Code Composer Studio where to find these files.
 
 1.  Launch Code Composer Studio.
@@ -29,7 +31,20 @@ The CC1310 projects depend on the SimpleLink SDK. You must inform Code Composer 
 
 This step ensures that the `player1-cc1310` and `player2-cc1310` projects can find the required SDK drivers and kernel files to compile.
 
-The MSP430 projects (`player1-msp430` and `player2-msp430`) are self-contained and do not require additional path setup, as their `driverlib` and `grlib` dependencies are included within the project folders.
+### Project Dependencies
+
+All four projects rely on shared code libraries to reduce duplication and maintain consistency:
+
+- **MSP430 Projects** (`player1-msp430` and `player2-msp430`):
+
+  - Depend on shared libraries and application code in `common_msp430/`
+  - Includes `_ti_driverlib`, `_ti_grlib`, and shared modules: `comm`, `drivers`, `game`, `hal`, and `input`
+
+- **CC1310 Projects** (`player1-cc1310` and `player2-cc1310`):
+  - Depend on shared code in `common_cc1310/`
+  - Includes `easylink` and `smartrf_settings` modules
+
+The project files are configured with relative paths to reference these common folders. When importing the projects, ensure the workspace structure maintains the repository layout with the common folders at the same level as the player project folders.
 
 ---
 
