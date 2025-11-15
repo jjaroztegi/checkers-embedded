@@ -8,6 +8,7 @@
       "name": "Mac",
       "includePath": [
         "${workspaceFolder}",
+        "${workspaceFolder}/../common_cc1310",
         "${env:SIMPLELINK_CC13X0_SDK}/source",
         "${env:SIMPLELINK_CC13X0_SDK}/kernel/nortos",
         "${env:SIMPLELINK_CC13X0_SDK}/kernel/nortos/posix",
@@ -31,6 +32,7 @@
       "browse": {
         "path": [
           "${workspaceFolder}",
+          "${workspaceFolder}/../common_cc1310",
           "${env:SIMPLELINK_CC13X0_SDK}/source",
           "${env:SIMPLELINK_CC13X0_SDK}/kernel/nortos",
           "${env:SIMPLELINK_CC13X0_SDK}/kernel/nortos/posix",

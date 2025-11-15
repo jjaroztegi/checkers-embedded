@@ -24,4 +24,41 @@
 		<nature>org.eclipse.cdt.core.ccnature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>_ti_driverlib</name>
+			<type>2</type>
+			<locationURI>PARENT-1-PROJECT_LOC/common_msp430/_ti_driverlib</locationURI>
+		</link>
+		<link>
+			<name>_ti_grlib</name>
+			<type>2</type>
+			<locationURI>PARENT-1-PROJECT_LOC/common_msp430/_ti_grlib</locationURI>
+		</link>
+		<link>
+			<name>comm</name>
+			<type>2</type>
+			<locationURI>PARENT-1-PROJECT_LOC/common_msp430/comm</locationURI>
+		</link>
+		<link>
+			<name>drivers</name>
+			<type>2</type>
+			<locationURI>PARENT-1-PROJECT_LOC/common_msp430/drivers</locationURI>
+		</link>
+		<link>
+			<name>game</name>
+			<type>2</type>
+			<locationURI>PARENT-1-PROJECT_LOC/common_msp430/game</locationURI>
+		</link>
+		<link>
+			<name>hal</name>
+			<type>2</type>
+			<locationURI>PARENT-1-PROJECT_LOC/common_msp430/hal</locationURI>
+		</link>
+		<link>
+			<name>input</name>
+			<type>2</type>
+			<locationURI>PARENT-1-PROJECT_LOC/common_msp430/input</locationURI>
+		</link>
+	</linkedResources>
 </projectDescription>
