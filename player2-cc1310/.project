@@ -30,5 +30,15 @@
 			<type>1</type>
 			<locationURI>COM_TI_SIMPLELINK_CC13X0_SDK_INSTALL_DIR/source/ti/boards/CC1310_LAUNCHXL/Board.html</locationURI>
 		</link>
+		<link>
+			<name>easylink</name>
+			<type>2</type>
+			<locationURI>PARENT-1-PROJECT_LOC/common_cc1310/easylink</locationURI>
+		</link>
+		<link>
+			<name>smartrf_settings</name>
+			<type>2</type>
+			<locationURI>PARENT-1-PROJECT_LOC/common_cc1310/smartrf_settings</locationURI>
+		</link>
 	</linkedResources>
 </projectDescription>
