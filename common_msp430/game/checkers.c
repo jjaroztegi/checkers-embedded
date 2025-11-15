@@ -291,5 +291,5 @@ Player CHECKERS_game_ended(GameState* state) {
   }
 
   // Game is still ongoing
-  return 0;
+  return PLAYER_NONE;
 }

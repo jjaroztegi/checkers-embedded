@@ -22,7 +22,7 @@ typedef enum {
 
 typedef enum { IDLE, PIECE_SELECTED } SelectionState;
 
-typedef enum { PLAYER_RED = 1, PLAYER_BLACK = 2 } Player;
+typedef enum { PLAYER_NONE = 0, PLAYER_RED = 1, PLAYER_BLACK = 2 } Player;
 
 typedef struct {
   int from_row;
