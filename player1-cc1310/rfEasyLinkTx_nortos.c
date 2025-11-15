@@ -94,7 +94,7 @@ void* mainThread(void* arg0) {
 
   while (1) {
     switch (state) {
-      case UART_READING:
+      case UART_READING: {
         // Wait for incoming move string from MSP430
         memset(rxBuffer, 0, sizeof(rxBuffer));
         int bytesRead = UART_read(uartHandle, rxBuffer, sizeof(rxBuffer) - 1);
@@ -104,6 +104,7 @@ void* mainThread(void* arg0) {
           state = RF_SENDING;
         }
         break;
+      }
 
       case RF_SENDING:
         // Create and send RF packet with the move string
@@ -126,7 +127,7 @@ void* mainThread(void* arg0) {
         }
         break;
 
-      case RF_RECEIVING:
+      case RF_RECEIVING: {
         // Wait to receive RF response (opponent's move)
         memset(&rxPacket, 0, sizeof(rxPacket));
         rxPacket.rxTimeout = EasyLink_ms_To_RadioTime(0);  // Wait indefinitely
@@ -141,6 +142,7 @@ void* mainThread(void* arg0) {
           state = UART_WRITING;
         }
         break;
+      }
 
       case UART_WRITING:
         // 200 milliseconds delay for MSP to start listening
