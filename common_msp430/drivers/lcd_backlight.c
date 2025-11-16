@@ -14,7 +14,7 @@
 #include <drivers/lcd_backlight.h>
 
 // PWM Configuration
-#define PWM_TIMER_PERIOD 200  // Timer period for PWM (determines frequency)
+#define PWM_TIMER_PERIOD 100  // Timer period for PWM (determines frequency) - 100 = ~2.5kHz
 #define PWM_TIMER_BASE __MSP430_BASEADDRESS_TB0__
 #define PWM_CCR_REGISTER TIMER_B_CAPTURECOMPARE_REGISTER_5
 #define MIN_LUX_THRESHOLD 2000  // Lux level where backlight reaches max
@@ -23,7 +23,7 @@
 static Timer_B_initUpModeParam upModeParam = {
     TIMER_B_CLOCKSOURCE_SMCLK,            // SMCLK Clock Source (16MHz)
     TIMER_B_CLOCKSOURCE_DIVIDER_64,       // Divide by 64 = 250kHz
-    PWM_TIMER_PERIOD,                     // 200 ticks = ~1.25kHz PWM frequency
+    PWM_TIMER_PERIOD,                     // 100 ticks = ~2.5kHz PWM frequency
     TIMER_B_TBIE_INTERRUPT_DISABLE,       // Disable Timer interrupt
     TIMER_B_CCIE_CCR0_INTERRUPT_DISABLE,  // Disable CCR0 interrupt
     TIMER_B_DO_CLEAR,                     // Clear value
