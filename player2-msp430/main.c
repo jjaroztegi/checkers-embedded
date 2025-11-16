@@ -9,9 +9,11 @@
 #include <hal/hal_digital_input.h>
 #include <hal/hal_i2c.h>
 #include <hal/hal_lcd.h>
+#include <hal/hal_pwm.h>
 #include <hal/hal_uart.h>
 
 // Driver headers
+#include <drivers/buzzer.h>
 #include <drivers/crystalfontz.h>
 #include <drivers/joystick.h>
 #include <drivers/lcd_backlight.h>
@@ -52,6 +54,7 @@ void main(void) {
   HAL_UART_init_gpio();
   HAL_ADC_init_gpio();
   HAL_I2C_init_gpio();
+  HAL_PWM_init_gpio();
 
   PMM_unlockLPM5();
 
@@ -60,6 +63,7 @@ void main(void) {
   HAL_I2C_config();
   HAL_ADC_config();
   HAL_DIGIN_init_gpio();
+  HAL_PWM_config();
 
   // Enable global interrupts
   __bis_SR_register(GIE);
@@ -184,7 +188,20 @@ void handle_input(GameState* game, InputState* input, TurnState* turn_state) {
       pending_move = CHECKERS_get_move(game);
       // Only send if the move is valid
       if (CHECKERS_apply_move(game, &pending_move)) {
+        // Valid move: Single 100ms beep
+        BUZ_sound_on();
+        __delay_cycles(1600000);
+        BUZ_sound_off();
         *turn_state = TURN_SENDING;
+      } else {
+        // Invalid move: Three short beeps (50ms on, 50ms off)
+        int i;
+        for (i = 0; i < 3; i++) {
+          BUZ_sound_on();
+          __delay_cycles(800000);
+          BUZ_sound_off();
+          __delay_cycles(800000);
+        }
       }
     }
   }
